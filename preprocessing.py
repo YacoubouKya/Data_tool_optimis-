@@ -362,6 +362,90 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         st.error(f"❌ Erreur lors du chargement du dictionnaire : {e}")
         return
     
+    # Étape 1.5 : Pré-validation et nettoyage des données
+    st.markdown("### 1️⃣.5 Pré-validation des Données")
+    
+    # Analyse rapide des problèmes de qualité
+    total_cells = df.shape[0] * df.shape[1]
+    missing_cells = df.isna().sum().sum()
+    missing_pct = (missing_cells / total_cells) * 100
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Lignes", df.shape[0])
+    with col2:
+        st.metric("Colonnes", df.shape[1])
+    with col3:
+        st.metric("Valeurs manquantes", f"{missing_cells} ({missing_pct:.1f}%)")
+    
+    # Afficher les colonnes avec des NaN
+    cols_with_nan = df.columns[df.isna().any()].tolist()
+    if cols_with_nan:
+        st.warning(f"⚠️ {len(cols_with_nan)} colonnes contiennent des valeurs manquantes")
+        
+        with st.expander("📊 Détail des valeurs manquantes par colonne"):
+            missing_df = pd.DataFrame({
+                'Colonne': cols_with_nan,
+                'NaN': [df[col].isna().sum() for col in cols_with_nan],
+                'Pourcentage': [f"{(df[col].isna().sum()/len(df))*100:.1f}%" for col in cols_with_nan]
+            }).sort_values('NaN', ascending=False)
+            st.dataframe(missing_df, use_container_width=True)
+        
+        # Proposer un nettoyage préalable
+        st.markdown("**Options de pré-nettoyage** :")
+        pre_clean = st.radio(
+            "Voulez-vous nettoyer les données avant la détection par dictionnaire ?",
+            ["Non, continuer avec les NaN", "Oui, nettoyer automatiquement", "Oui, choisir les actions"],
+            key="pre_clean_choice",
+            help="Le nettoyage préalable peut améliorer la détection par dictionnaire"
+        )
+        
+        if pre_clean == "Oui, nettoyer automatiquement":
+            if st.button("🧹 Nettoyer Automatiquement", key="auto_clean"):
+                with st.spinner("Nettoyage en cours..."):
+                    df_cleaned = df.copy()
+                    clean_log = []
+                    
+                    for col in cols_with_nan:
+                        before = df_cleaned[col].isna().sum()
+                        
+                        if df_cleaned[col].dtype in ['int64', 'float64']:
+                            # Numériques : imputer par la médiane
+                            df_cleaned[col] = df_cleaned[col].fillna(df_cleaned[col].median())
+                            clean_log.append({
+                                'Colonne': col,
+                                'Type': 'Numérique',
+                                'Action': 'Imputation médiane',
+                                'NaN nettoyés': before
+                            })
+                        else:
+                            # Catégoriques : imputer par le mode
+                            mode_val = df_cleaned[col].mode()[0] if not df_cleaned[col].mode().empty else 'UNKNOWN'
+                            df_cleaned[col] = df_cleaned[col].fillna(mode_val)
+                            clean_log.append({
+                                'Colonne': col,
+                                'Type': 'Catégorique',
+                                'Action': f'Imputation mode ({mode_val})',
+                                'NaN nettoyés': before
+                            })
+                    
+                    # Mettre à jour le dataframe
+                    df = df_cleaned
+                    st.session_state['preprocessed_data'] = df
+                    
+                    st.success(f"✅ Nettoyage terminé : {missing_cells} valeurs manquantes traitées")
+                    
+                    # Afficher le log
+                    with st.expander("📝 Log du nettoyage"):
+                        st.dataframe(pd.DataFrame(clean_log), use_container_width=True)
+        
+        elif pre_clean == "Oui, choisir les actions":
+            st.info("💡 Utilisez l'onglet 'Prétraitement Standard' pour un nettoyage personnalisé, puis revenez ici.")
+    else:
+        st.success("✅ Aucune valeur manquante détectée")
+    
+    st.markdown("---")
+    
     # Étape 2 : Détecter les anomalies
     st.markdown("### 2️⃣ Détecter les Anomalies")
     
