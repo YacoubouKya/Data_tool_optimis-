@@ -9,7 +9,7 @@
 
 ## 🚀 Démo en ligne
 
-👉 **[Accéder à l'application déployée](https://share.streamlit.io)** *(Remplacer par votre URL après déploiement)*
+👉 **[Accéder à l'application déployée](https://share.streamlit.io)**
 
 > **Note** : Cette application est déployée sur Streamlit Cloud et accessible sans installation.
 
@@ -387,3 +387,4 @@ Pour toute question ou problème :
 ---
 
 **Bon codage ! 🚀**
+
