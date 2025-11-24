@@ -228,32 +228,50 @@ elif section == "🛠️ Prétraitement":
     st.header("🛠️ Prétraitement")
     if "data" in st.session_state:
         df = st.session_state["data"]
-        profile = eda.generate_profile(df)
-        issues = preprocessing.detect_and_propose_corrections(profile, df)
-        if issues:
-            st.subheader("🚨 Anomalies détectées et corrections proposées")
-            corrections_dict = {}
-            for issue in issues:
-                col = issue["colonne"]
-                anomalies = ", ".join(issue["anomalies"])
-                st.markdown(f"**Colonne : `{col}`**"); st.write(f"Anomalies : {anomalies}")
-                choice = st.selectbox(f"Choisir correction pour `{col}`", ["Ne pas appliquer de correction"] + issue["propositions"], key=f"choice_{col}")
-                corrections_dict[col] = choice
-            if st.button("✅ Appliquer toutes les corrections sélectionnées"):
-                valid_corrections = {col: corr for col, corr in corrections_dict.items() if corr != "Ne pas appliquer de correction"}
-                if valid_corrections:
-                    df_corrige, log_df = preprocessing.apply_corrections_with_log(df, valid_corrections)
-                    st.session_state["clean_data"] = df_corrige
-                    st.session_state["correction_log"] = log_df
-                    st.success("✅ Toutes les corrections appliquées !")
-                    st.subheader("📋 Tableau récapitulatif des corrections")
-                    st.dataframe(log_df)
-                    preprocessing.download_df(df_corrige, label="Télécharger la base corrigée", file_name="base_corrigee", file_format="excel")
-                    preprocessing.download_df(log_df, label="Télécharger le log des corrections", file_name="log_corrections", file_format="excel")
-                else:
-                    st.info("Aucune correction sélectionnée à appliquer.")
+        
+        # Choix du mode de prétraitement
+        st.markdown("### 🎯 Choisir le Mode de Prétraitement")
+        mode = st.radio(
+            "Mode",
+            ["📊 Mode Automatique (Profiling)", "📋 Mode Dictionnaire de Données"],
+            help="Mode Automatique : Détection basée sur ydata-profiling | Mode Dictionnaire : Validation basée sur vos règles métier"
+        )
+        
+        st.markdown("---")
+        
+        if mode == "📊 Mode Automatique (Profiling)":
+            # Mode classique existant
+            profile = eda.generate_profile(df)
+            issues = preprocessing.detect_and_propose_corrections(profile, df)
+            if issues:
+                st.subheader("🚨 Anomalies détectées et corrections proposées")
+                corrections_dict = {}
+                for issue in issues:
+                    col = issue["colonne"]
+                    anomalies = ", ".join(issue["anomalies"])
+                    st.markdown(f"**Colonne : `{col}`**"); st.write(f"Anomalies : {anomalies}")
+                    choice = st.selectbox(f"Choisir correction pour `{col}`", ["Ne pas appliquer de correction"] + issue["propositions"], key=f"choice_{col}")
+                    corrections_dict[col] = choice
+                if st.button("✅ Appliquer toutes les corrections sélectionnées"):
+                    valid_corrections = {col: corr for col, corr in corrections_dict.items() if corr != "Ne pas appliquer de correction"}
+                    if valid_corrections:
+                        df_corrige, log_df = preprocessing.apply_corrections_with_log(df, valid_corrections)
+                        st.session_state["clean_data"] = df_corrige
+                        st.session_state["correction_log"] = log_df
+                        st.success("✅ Toutes les corrections appliquées !")
+                        st.subheader("📋 Tableau récapitulatif des corrections")
+                        st.dataframe(log_df)
+                        preprocessing.download_df(df_corrige, label="Télécharger la base corrigée", file_name="base_corrigee", file_format="excel")
+                        preprocessing.download_df(log_df, label="Télécharger le log des corrections", file_name="log_corrections", file_format="excel")
+                    else:
+                        st.info("Aucune correction sélectionnée à appliquer.")
+            else:
+                st.info("✅ Aucune anomalie détectée !")
+        
         else:
-            st.info("✅ Aucune anomalie détectée !")
+            # Nouveau mode dictionnaire
+            preprocessing.run_dictionary_based_preprocessing(df)
+    
     else:
         st.warning("⚠️ Chargez d'abord les données.")
 

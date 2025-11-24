@@ -4,6 +4,16 @@
 import pandas as pd
 import streamlit as st
 from io import BytesIO
+import sys
+import os
+
+# Ajouter le répertoire parent au path pour importer data_quality
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from data_quality import DataQualityChecker
+    HAS_DATA_QUALITY = True
+except ImportError:
+    HAS_DATA_QUALITY = False
 
 # ------------------------
 # Détection anomalies (utilise profile_report)
@@ -271,4 +281,192 @@ def download_df(df: pd.DataFrame, label="Télécharger", file_name="data", file_
         processed_data = output.getvalue()
         st.download_button(label=f"{label} (Excel)", data=processed_data, file_name=f"{file_name}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"{file_name}_excel")
     else:
-        st.error("Format non supporté. Choisissez 'csv' ou 'excel'.")
+        st.warning(f"Format {file_format} non supporté")
+
+
+# ------------------------
+# Prétraitement basé sur Dictionnaire de Données
+# ------------------------
+def run_dictionary_based_preprocessing(df: pd.DataFrame):
+    """
+    Prétraitement avancé basé sur un dictionnaire de données
+    """
+    if not HAS_DATA_QUALITY:
+        st.error("❌ Module data_quality non disponible. Vérifiez que data_quality.py est présent.")
+        return
+    
+    st.subheader("📋 Prétraitement Basé sur Dictionnaire de Données")
+    
+    # Étape 1 : Charger le dictionnaire
+    st.markdown("### 1️⃣ Charger le Dictionnaire de Données")
+    
+    uploaded_dict = st.file_uploader(
+        "Charger votre dictionnaire (Excel ou CSV)",
+        type=['xlsx', 'xls', 'csv'],
+        key="dict_uploader",
+        help="Le dictionnaire doit contenir les colonnes : Colonne, Type, Obligatoire, Valeurs_Autorisées, Min, Max, Format, Action_Si_Anomalie"
+    )
+    
+    if uploaded_dict is None:
+        st.info("ℹ️ Chargez un dictionnaire de données pour commencer")
+        with st.expander("📖 Format du dictionnaire"):
+            st.markdown("""
+            **Colonnes requises** :
+            - `Colonne` : Nom de la colonne
+            - `Type` : numerique, categorique, texte, date
+            - `Obligatoire` : oui/non
+            - `Valeurs_Autorisées` : Liste séparée par virgules (pour catégoriques)
+            - `Min` : Valeur minimale
+            - `Max` : Valeur maximale
+            - `Format` : Format attendu (email, regex, date format)
+            - `Action_Si_Anomalie` : imputer_moyenne, imputer_mediane, imputer_mode, supprimer_ligne, mettre_vide, ignorer
+            
+            Consultez `TEMPLATE_DICTIONNAIRE.md` pour plus de détails.
+            """)
+        return
+    
+    # Charger le dictionnaire
+    try:
+        if uploaded_dict.name.endswith('.csv'):
+            dictionnaire = pd.read_csv(uploaded_dict)
+        else:
+            dictionnaire = pd.read_excel(uploaded_dict)
+        
+        st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
+        
+        with st.expander("👁️ Aperçu du dictionnaire"):
+            st.dataframe(dictionnaire)
+    
+    except Exception as e:
+        st.error(f"❌ Erreur lors du chargement du dictionnaire : {e}")
+        return
+    
+    # Étape 2 : Détecter les anomalies
+    st.markdown("### 2️⃣ Détecter les Anomalies")
+    
+    if st.button("🔍 Lancer la Détection", key="detect_anomalies"):
+        with st.spinner("Détection en cours..."):
+            try:
+                checker = DataQualityChecker(dictionnaire)
+                anomalies_df = checker.detect_anomalies(df)
+                
+                st.session_state['anomalies_df'] = anomalies_df
+                st.session_state['quality_checker'] = checker
+                
+                if len(anomalies_df) == 0:
+                    st.success("🎉 Aucune anomalie détectée ! Vos données sont conformes au dictionnaire.")
+                else:
+                    st.warning(f"⚠️ {len(anomalies_df)} anomalies détectées")
+                    
+                    # Statistiques par type
+                    st.markdown("**📊 Répartition par type d'anomalie**")
+                    anomalie_counts = anomalies_df['Anomalie'].value_counts()
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.dataframe(anomalie_counts)
+                    with col2:
+                        st.bar_chart(anomalie_counts)
+                    
+                    # Statistiques par colonne
+                    st.markdown("**📊 Répartition par colonne**")
+                    colonne_counts = anomalies_df['Colonne'].value_counts()
+                    st.dataframe(colonne_counts)
+                    
+            except Exception as e:
+                st.error(f"❌ Erreur lors de la détection : {e}")
+                import traceback
+                st.code(traceback.format_exc())
+                return
+    
+    # Afficher les anomalies si détectées
+    if 'anomalies_df' in st.session_state and len(st.session_state['anomalies_df']) > 0:
+        anomalies_df = st.session_state['anomalies_df']
+        
+        st.markdown("### 📋 Rapport d'Anomalies")
+        
+        # Filtres
+        col1, col2 = st.columns(2)
+        with col1:
+            type_filter = st.multiselect(
+                "Filtrer par type d'anomalie",
+                options=anomalies_df['Anomalie'].unique().tolist(),
+                default=anomalies_df['Anomalie'].unique().tolist()
+            )
+        with col2:
+            col_filter = st.multiselect(
+                "Filtrer par colonne",
+                options=anomalies_df['Colonne'].unique().tolist(),
+                default=anomalies_df['Colonne'].unique().tolist()
+            )
+        
+        filtered_anomalies = anomalies_df[
+            (anomalies_df['Anomalie'].isin(type_filter)) &
+            (anomalies_df['Colonne'].isin(col_filter))
+        ]
+        
+        st.dataframe(filtered_anomalies, use_container_width=True)
+        
+        # Télécharger le rapport
+        st.markdown("### 📥 Télécharger le Rapport d'Anomalies")
+        download_df(filtered_anomalies, "Télécharger rapport anomalies", "rapport_anomalies", "excel")
+        
+        # Étape 3 : Appliquer les corrections
+        st.markdown("### 3️⃣ Appliquer les Corrections")
+        
+        st.info("ℹ️ Les corrections seront appliquées selon les actions définies dans le dictionnaire")
+        
+        if st.button("✅ Appliquer Toutes les Corrections", key="apply_corrections"):
+            with st.spinner("Application des corrections..."):
+                try:
+                    checker = st.session_state['quality_checker']
+                    df_corrected, log_df = checker.apply_corrections(df, anomalies_df)
+                    
+                    # Supprimer les lignes marquées pour suppression
+                    rows_to_delete = log_df[log_df['Action_Appliquée'] == 'supprimer_ligne']['Ligne'].unique()
+                    if len(rows_to_delete) > 0:
+                        indices_to_drop = [int(r) - 1 for r in rows_to_delete if r != 'N/A']
+                        df_corrected = df_corrected.drop(indices_to_drop, errors='ignore').reset_index(drop=True)
+                    
+                    st.session_state['clean_data'] = df_corrected
+                    st.session_state['correction_log'] = log_df
+                    
+                    st.success(f"✅ Corrections appliquées ! {len(log_df)} modifications effectuées")
+                    
+                    # Afficher le log
+                    st.markdown("### 📝 Log des Corrections")
+                    st.dataframe(log_df, use_container_width=True)
+                    
+                    # Statistiques de qualité
+                    st.markdown("### 📊 Statistiques de Qualité")
+                    stats = checker.get_quality_stats(df_corrected, anomalies_df)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Lignes avant", stats['total_lignes'])
+                        st.metric("Lignes après", len(df_corrected))
+                    with col2:
+                        st.metric("Colonnes", stats['total_colonnes'])
+                        st.metric("Anomalies corrigées", len(log_df))
+                    with col3:
+                        st.metric("Taux de réussite", f"{(1 - len(anomalies_df)/len(df))*100:.1f}%")
+                    
+                    # Taux de complétude
+                    st.markdown("**Taux de complétude par colonne**")
+                    completude_df = pd.DataFrame(list(stats['taux_completude'].items()), columns=['Colonne', 'Taux'])
+                    st.dataframe(completude_df)
+                    
+                except Exception as e:
+                    st.error(f"❌ Erreur lors de l'application des corrections : {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+                    return
+        
+        # Étape 4 : Télécharger les résultats
+        if 'clean_data' in st.session_state and 'correction_log' in st.session_state:
+            st.markdown("### 4️⃣ Télécharger les Résultats")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                download_df(st.session_state['clean_data'], "📥 Base corrigée", "base_corrigee", "excel")
+            with col2:
+                download_df(st.session_state['correction_log'], "📥 Log des corrections", "log_corrections", "excel")

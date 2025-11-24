@@ -8,10 +8,12 @@ import seaborn as sns
 from io import BytesIO
 from ydata_profiling import ProfileReport
 
+@st.cache_data(show_spinner="Génération du profiling en cours...")
 def generate_profile(df: pd.DataFrame):
     """
-    Génère un rapport de profiling avec ydata-profiling.
+    Génère un rapport de profiling avec ydata-profiling (avec cache).
     Nécessite Python 3.11 (configuré via runtime.txt).
+    Le cache évite de recalculer le profiling si les données n'ont pas changé.
     """
     profile = ProfileReport(df, title="Profiling EDA", minimal=True)
     return profile
