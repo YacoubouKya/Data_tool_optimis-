@@ -1,4 +1,4 @@
-# Requirements pour Data Tool
+# Requirements pour Data Tool - Streamlit Cloud
 # Versions compatibles et testées
 
 # Core
@@ -18,7 +18,6 @@ seaborn==0.12.3
 
 # Profiling et analyse
 ydata-profiling==4.5.1
-streamlit-pandas-profiling==0.0.4
 phik==0.12.4
 visions==0.7.6
 

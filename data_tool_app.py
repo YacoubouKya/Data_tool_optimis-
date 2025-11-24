@@ -1,6 +1,13 @@
 # app.py
 import streamlit as st
 import pandas as pd
+import sys
+import os
+
+# Ajouter le dossier modules au path pour Streamlit Cloud
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
 from modules import data_loader, eda, preprocessing, modeling, evaluation, reporting
 from sklearn.model_selection import train_test_split
 
