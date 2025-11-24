@@ -111,7 +111,11 @@ elif section == "🛠️ Prétraitement":
     if "data" in st.session_state:
         df = st.session_state["data"]
         profile = eda.generate_profile(df)
-        issues = preprocessing.detect_and_propose_corrections(profile, df)
+        if profile is None:
+            st.warning("⚠️ Le profiling automatique n'est pas disponible. Détection d'anomalies limitée.")
+            issues = []
+        else:
+            issues = preprocessing.detect_and_propose_corrections(profile, df)
         if issues:
             st.subheader("🚨 Anomalies détectées et corrections proposées")
             corrections_dict = {}
