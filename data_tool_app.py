@@ -13,16 +13,12 @@ if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 # Imports des modules
-try:
-    import data_loader, eda, preprocessing, modeling, evaluation, reporting
-except ImportError as e:
-    st.error(f"❌ Erreur d'import des modules: {e}")
-    st.info("Structure du répertoire:")
-    st.code(f"Current dir: {current_dir}\nFiles: {os.listdir(current_dir)}")
-    if os.path.exists(modules_path):
-        st.code(f"Modules dir: {os.listdir(modules_path)}")
-    st.stop()
-
+import data_loader
+import eda
+import preprocessing
+import modeling
+import evaluation
+import reporting
 from sklearn.model_selection import train_test_split
 
 # ------------------------
