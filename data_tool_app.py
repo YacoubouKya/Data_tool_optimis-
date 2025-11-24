@@ -44,7 +44,14 @@ p, span, label, div { color: #FFFFFF !important; font-family: 'Segoe UI', sans-s
 [data-testid="stFileUploader"] small { color: #FFFFFF !important; }
 [data-testid="stFileUploader"] button { background-color: #34495E !important; color: #FFFFFF !important; border: 1px solid #FFD700 !important; }
 
-div[role="radiogroup"] > label, .stSelectbox { background: #34495E !important; color: yellow !important; padding: 8px 15px; border-radius: 8px; margin: 3px 0; cursor: pointer; }
+/* Selectbox - Fond noir avec texte blanc */
+.stSelectbox label { color: #FFD700 !important; font-weight: bold; }
+.stSelectbox > div > div { background-color: #1a1a1a !important; color: #FFFFFF !important; border: 1px solid #FFD700; border-radius: 8px; }
+.stSelectbox [data-baseweb="select"] > div { background-color: #1a1a1a !important; color: #FFFFFF !important; }
+.stSelectbox input { background-color: #1a1a1a !important; color: #FFFFFF !important; }
+
+/* Radio buttons */
+div[role="radiogroup"] > label { background: #34495E !important; color: yellow !important; padding: 8px 15px; border-radius: 8px; margin: 3px 0; cursor: pointer; }
 div[role="radiogroup"] > label:hover { background: #1ABC9C !important; }
 </style>
 """, unsafe_allow_html=True)
