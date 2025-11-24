@@ -43,12 +43,16 @@ p, span, label, div { color: #FFFFFF !important; font-family: 'Segoe UI', sans-s
 [data-testid="stFileUploader"] section > div { background-color: #1a1a1a !important; color: #FFFFFF !important; }
 [data-testid="stFileUploader"] small { color: #FFFFFF !important; }
 [data-testid="stFileUploader"] button { background-color: #34495E !important; color: #FFFFFF !important; border: 1px solid #FFD700 !important; }
+[data-testid="stFileUploader"] > div { background-color: #1a1a1a !important; }
+[data-testid="stFileUploader"] > div > div { background-color: #1a1a1a !important; }
+[data-testid="stFileUploader"] [role="button"] { background-color: #34495E !important; color: #FFFFFF !important; }
+[data-testid="stFileUploader"] p { color: #FFFFFF !important; }
+[data-testid="stFileUploader"] span { color: #FFFFFF !important; }
 
 /* Selectbox - Fond noir avec texte blanc */
 .stSelectbox label { color: #FFD700 !important; font-weight: bold; }
 .stSelectbox > div > div { background-color: #1a1a1a !important; color: #FFFFFF !important; border: 1px solid #FFD700; border-radius: 8px; }
 .stSelectbox [data-baseweb="select"] > div { background-color: #1a1a1a !important; color: #FFFFFF !important; }
-.stSelectbox input { background-color: #1a1a1a !important; color: #FFFFFF !important; }
 
 /* Radio buttons */
 div[role="radiogroup"] > label { background: #34495E !important; color: yellow !important; padding: 8px 15px; border-radius: 8px; margin: 3px 0; cursor: pointer; }
