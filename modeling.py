@@ -10,8 +10,8 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 import joblib
 from typing import Tuple, Any
-from modules.utils import helpers
-from modules.utils.metrics import classification_metrics, regression_metrics
+import helpers
+from metrics import classification_metrics, regression_metrics
 from math import isfinite
 
 def _format_metrics(d: dict, decimals=3):

@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from modules.utils.metrics import classification_metrics, regression_metrics
+from metrics import classification_metrics, regression_metrics
 from sklearn.metrics import confusion_matrix, roc_curve, auc, precision_recall_curve
 import scipy.stats as stats
 from sklearn.preprocessing import LabelEncoder
