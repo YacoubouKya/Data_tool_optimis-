@@ -39,6 +39,61 @@ def run_modeling(df: pd.DataFrame) -> dict:
 
     X = df.drop(columns=[target])
     y = df[target]
+    
+    # Validation et nettoyage de la variable cible
+    st.markdown("### 🔍 Validation des Données")
+    
+    # Vérifier les valeurs manquantes dans y
+    y_missing = y.isna().sum()
+    if y_missing > 0:
+        st.warning(f"⚠️ Variable cible contient {y_missing} valeurs manquantes ({y_missing/len(y)*100:.1f}%)")
+        
+        action = st.radio(
+            "Comment traiter les valeurs manquantes dans la cible ?",
+            ["Supprimer les lignes", "Imputer (moyenne/mode)", "Annuler"],
+            key="missing_target_action"
+        )
+        
+        if action == "Annuler":
+            st.info("Veuillez nettoyer vos données avant la modélisation")
+            st.stop()
+        elif action == "Supprimer les lignes":
+            valid_idx = y.notna()
+            X = X[valid_idx].reset_index(drop=True)
+            y = y[valid_idx].reset_index(drop=True)
+            st.success(f"✅ {y_missing} lignes supprimées. Nouvelles dimensions : {len(y)} lignes")
+        else:  # Imputer
+            if y.dtype in ['object', 'category']:
+                mode_val = y.mode()[0] if not y.mode().empty else y.dropna().iloc[0]
+                y = y.fillna(mode_val)
+                st.success(f"✅ Valeurs manquantes imputées avec le mode : {mode_val}")
+            else:
+                mean_val = y.mean()
+                y = y.fillna(mean_val)
+                st.success(f"✅ Valeurs manquantes imputées avec la moyenne : {mean_val:.2f}")
+    
+    # Vérifier les valeurs infinies dans y (pour régression)
+    if y.dtype in ['int64', 'float64']:
+        y_inf = (~y.isna() & ((y == float('inf')) | (y == float('-inf')))).sum()
+        if y_inf > 0:
+            st.warning(f"⚠️ Variable cible contient {y_inf} valeurs infinies")
+            y = y.replace([float('inf'), float('-inf')], pd.NA)
+            y = y.fillna(y.median())
+            st.success(f"✅ Valeurs infinies remplacées par la médiane")
+    
+    # Afficher statistiques de la cible
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Lignes valides", len(y))
+    with col2:
+        st.metric("Valeurs uniques", y.nunique())
+    with col3:
+        if y.dtype in ['int64', 'float64']:
+            st.metric("Moyenne", f"{y.mean():.2f}")
+        else:
+            st.metric("Mode", y.mode()[0] if not y.mode().empty else "N/A")
+    
+    st.markdown("---")
 
     task = st.selectbox("Type de tâche", ["auto", "classification", "regression"], index=0)
     if task == "auto":

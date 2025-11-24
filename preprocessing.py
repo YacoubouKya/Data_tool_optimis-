@@ -332,6 +332,27 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         else:
             dictionnaire = pd.read_excel(uploaded_dict)
         
+        # Valider le format du dictionnaire
+        colonnes_requises = ['Colonne', 'Type', 'Obligatoire', 'Valeurs_Autorisées', 'Min', 'Max', 'Format', 'Action_Si_Anomalie']
+        colonnes_manquantes = [col for col in colonnes_requises if col not in dictionnaire.columns]
+        
+        if colonnes_manquantes:
+            st.error(f"❌ Le dictionnaire ne contient pas les colonnes requises : {', '.join(colonnes_manquantes)}")
+            st.warning("**Colonnes actuelles dans votre fichier :**")
+            st.write(list(dictionnaire.columns))
+            st.info("""
+            **Format attendu :**
+            - `Colonne` : Nom de la colonne
+            - `Type` : numerique, categorique, texte, date
+            - `Obligatoire` : oui/non
+            - `Valeurs_Autorisées` : Liste séparée par virgules
+            - `Min` : Valeur minimale
+            - `Max` : Valeur maximale
+            - `Format` : Format attendu
+            - `Action_Si_Anomalie` : imputer_moyenne, imputer_mediane, imputer_mode, supprimer_ligne, mettre_vide, ignorer
+            """)
+            return
+        
         st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
         
         with st.expander("👁️ Aperçu du dictionnaire"):
