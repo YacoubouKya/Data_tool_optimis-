@@ -91,12 +91,15 @@ div[role="radiogroup"] label:hover {
 /* JSON display pour les métriques */
 [data-testid="stJson"] {
     background-color: #000000 !important;
-    border: 1px solid #FFD700 !important;
     border-radius: 8px;
     padding: 10px;
 }
 
-[data-testid="stJson"] * {
+[data-testid="stJson"] *,
+[data-testid="stJson"] div,
+[data-testid="stJson"] span,
+[data-testid="stJson"] p {
+    background-color: #000000 !important;
     color: #FFFFFF !important;
     font-family: 'Courier New', monospace !important;
 }
@@ -105,9 +108,24 @@ div[role="radiogroup"] label:hover {
 code, pre {
     background-color: #000000 !important;
     color: #FFFFFF !important;
-    border: 1px solid #FFD700 !important;
     border-radius: 5px;
     padding: 10px !important;
+}
+
+/* Forcer le fond noir pour les conteneurs de métriques */
+.stMarkdown code {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
+}
+
+/* Cibler spécifiquement les éléments JSON internes */
+[data-testid="stJson"] > div {
+    background-color: #000000 !important;
+}
+
+[data-testid="stJson"] pre {
+    background-color: #000000 !important;
+    color: #FFFFFF !important;
 }
 
 /* Dataframes (métriques en tableau) */
