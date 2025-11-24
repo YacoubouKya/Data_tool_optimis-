@@ -7,18 +7,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
 
-# Import optionnel de ydata-profiling (peut être absent sur Streamlit Cloud)
-try:
-    from ydata_profiling import ProfileReport
-    PROFILING_AVAILABLE = True
-except ImportError:
-    PROFILING_AVAILABLE = False
-    st.warning("⚠️ ydata-profiling n'est pas disponible. Le profiling automatique est désactivé.")
+from ydata_profiling import ProfileReport
 
 def generate_profile(df: pd.DataFrame):
-    if not PROFILING_AVAILABLE:
-        st.error("❌ Le profiling automatique n'est pas disponible. Installez ydata-profiling.")
-        return None
+    """
+    Génère un rapport de profiling avec ydata-profiling.
+    """
     profile = ProfileReport(df, title="Profiling EDA", minimal=True)
     return profile
 
