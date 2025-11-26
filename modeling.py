@@ -3,13 +3,21 @@ import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.ensemble import (
+    RandomForestClassifier, RandomForestRegressor,
+    GradientBoostingClassifier, GradientBoostingRegressor,
+    AdaBoostClassifier, AdaBoostRegressor,
+    ExtraTreesClassifier, ExtraTreesRegressor
+)
+from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.svm import SVC, SVR
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 import joblib
-from typing import Tuple, Any
+from typing import Tuple, Any, Dict
 import helpers
 import metrics
 import model_utils
@@ -36,8 +44,21 @@ def run_modeling(df: pd.DataFrame) -> dict:
     from_comparison = "best_model_name" in st.session_state and "comparison_results" in st.session_state
     
     if from_comparison:
-        st.success(f"🏆 **Meilleur modèle détecté** : {st.session_state['best_model_name']}")
-        st.info("💡 Vous pouvez affiner ce modèle ou en choisir un autre")
+        best_model = st.session_state['best_model_name']
+        comparison_results = st.session_state['comparison_results']
+        
+        # Récupérer le score du meilleur modèle
+        best_row = comparison_results[comparison_results['Modèle'] == best_model]
+        if not best_row.empty:
+            # Trouver la colonne de score principal (Accuracy ou R²)
+            score_col = 'Accuracy' if 'Accuracy' in comparison_results.columns else 'R²'
+            best_score = best_row[score_col].values[0]
+            
+            st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model} (Score: {best_score:.4f})")
+            st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
+        else:
+            st.success(f"🏆 **Meilleur modèle détecté** : {best_model}")
+            st.info("💡 Vous pouvez affiner ce modèle ou en choisir un autre")
 
     cols = df.columns.tolist()
     
@@ -124,51 +145,130 @@ def run_modeling(df: pd.DataFrame) -> dict:
     test_size = st.slider("Taille test (%)", 5, 50, 20) / 100.0
     random_state = int(st.number_input("Seed aléatoire", value=42))
 
+    # Définir tous les modèles disponibles
+    st.markdown("### 🎯 Sélection du Modèle")
+    
+    # Mapper les noms de la comparaison vers les choix de modeling
+    model_mapping = {
+        "Random Forest": "random_forest",
+        "Gradient Boosting": "gradient_boosting",
+        "Logistic Regression": "logistic_regression",
+        "Linear Regression": "linear_regression",
+        "Ridge": "ridge",
+        "Lasso": "lasso",
+        "AdaBoost": "adaboost",
+        "Extra Trees": "extra_trees",
+        "Decision Tree": "decision_tree",
+        "K-Nearest Neighbors": "knn",
+        "SVM": "svm",
+        "SVR": "svr"
+    }
+    
+    # Liste complète des modèles disponibles
+    if task == "classification":
+        available_models = [
+            "Random Forest", "Gradient Boosting", "Logistic Regression",
+            "AdaBoost", "Extra Trees", "Decision Tree", "K-Nearest Neighbors", "SVM"
+        ]
+    else:
+        available_models = [
+            "Random Forest", "Gradient Boosting", "Linear Regression",
+            "Ridge", "Lasso", "AdaBoost", "Extra Trees", "Decision Tree",
+            "K-Nearest Neighbors", "SVR"
+        ]
+    
     # Si on vient de la comparaison, proposer les modèles testés
     if from_comparison and "comparison_results" in st.session_state:
-        st.markdown("### 🎯 Sélection du Modèle")
-        
         comparison_models = st.session_state["comparison_results"]["Modèle"].tolist()
         best_model_name = st.session_state.get("best_model_name", comparison_models[0])
         
-        # Mapper les noms de la comparaison vers les choix de modeling
-        model_mapping = {
-            "Random Forest": "random_forest",
-            "Gradient Boosting": "gradient_boosting",
-            "Logistic Regression": "linear/logistic",
-            "Linear Regression": "linear/logistic"
-        }
+        # Filtrer les modèles disponibles pour ne garder que ceux de la comparaison
+        models_to_show = [m for m in comparison_models if m in available_models]
         
         # Sélection avec le meilleur modèle par défaut
         model_display_choice = st.selectbox(
             "Choisir le modèle à affiner",
-            comparison_models,
-            index=comparison_models.index(best_model_name) if best_model_name in comparison_models else 0,
+            models_to_show,
+            index=models_to_show.index(best_model_name) if best_model_name in models_to_show else 0,
             help="Le meilleur modèle de la comparaison est sélectionné par défaut"
         )
-        
-        # Convertir vers le format de modeling.py
-        model_choice = model_mapping.get(model_display_choice, "auto")
-        
-        st.info(f"💡 Modèle sélectionné : **{model_display_choice}**")
     else:
-        model_choice = st.selectbox("Choisir un modèle", ["auto", "random_forest", "gradient_boosting", "linear/logistic"])
+        # Sélection parmi tous les modèles disponibles
+        model_display_choice = st.selectbox(
+            "Choisir un modèle",
+            available_models,
+            help="Sélectionnez le modèle à entraîner"
+        )
+    
+    # Convertir vers le format interne
+    model_choice = model_mapping.get(model_display_choice, "random_forest")
+    
+    st.info(f"💡 Modèle sélectionné : **{model_display_choice}**")
     
     do_scale = st.checkbox("⚙️ Standardiser les numériques", value=True)
 
-    # Hyperparamètres exposés
-    if model_choice in ["random_forest", "auto"]:
-        rf_n_estimators = int(st.number_input("RF - n_estimators", 10, 1000, 100))
-        rf_max_depth = int(st.number_input("RF - max_depth (0=>None)", 0, 50, 0))
-    else:
-        rf_n_estimators = 100; rf_max_depth = 0
-
-    if model_choice in ["gradient_boosting", "auto"]:
-        gb_n_estimators = int(st.number_input("GB - n_estimators", 10, 1000, 100))
-        gb_max_depth = int(st.number_input("GB - max_depth", 1, 20, 3))
-        gb_lr = float(st.number_input("GB - learning_rate", 0.01, 1.0, 0.1))
-    else:
-        gb_n_estimators = 100; gb_max_depth = 3; gb_lr = 0.1
+    # Hyperparamètres par défaut (peuvent être écrasés par ceux de la comparaison)
+    default_params = {
+        'rf_n_estimators': 100, 'rf_max_depth': 0,
+        'gb_n_estimators': 100, 'gb_max_depth': 3, 'gb_lr': 0.1,
+        'ab_n_estimators': 50, 'ab_lr': 1.0,
+        'et_n_estimators': 100, 'et_max_depth': 0,
+        'dt_max_depth': 0, 'dt_min_samples_split': 2,
+        'knn_n_neighbors': 5,
+        'svm_C': 1.0, 'svm_kernel': 'rbf',
+        'ridge_alpha': 1.0,
+        'lasso_alpha': 1.0
+    }
+    
+    st.markdown("### ⚙️ Configuration des Hyperparamètres")
+    
+    # Afficher uniquement les hyperparamètres du modèle sélectionné
+    if model_choice == "random_forest":
+        st.markdown("**Random Forest**")
+        rf_n_estimators = int(st.number_input("Nombre d'arbres (n_estimators)", 10, 1000, default_params['rf_n_estimators'], key="rf_n_est"))
+        rf_max_depth = int(st.number_input("Profondeur max (0 = illimitée)", 0, 50, default_params['rf_max_depth'], key="rf_depth"))
+    
+    elif model_choice == "gradient_boosting":
+        st.markdown("**Gradient Boosting**")
+        gb_n_estimators = int(st.number_input("Nombre d'arbres (n_estimators)", 10, 1000, default_params['gb_n_estimators'], key="gb_n_est"))
+        gb_max_depth = int(st.number_input("Profondeur max", 1, 20, default_params['gb_max_depth'], key="gb_depth"))
+        gb_lr = float(st.number_input("Taux d'apprentissage (learning_rate)", 0.01, 1.0, default_params['gb_lr'], key="gb_lr"))
+    
+    elif model_choice == "adaboost":
+        st.markdown("**AdaBoost**")
+        ab_n_estimators = int(st.number_input("Nombre d'estimateurs", 10, 500, default_params['ab_n_estimators'], key="ab_n_est"))
+        ab_lr = float(st.number_input("Taux d'apprentissage", 0.01, 2.0, default_params['ab_lr'], key="ab_lr"))
+    
+    elif model_choice == "extra_trees":
+        st.markdown("**Extra Trees**")
+        et_n_estimators = int(st.number_input("Nombre d'arbres", 10, 1000, default_params['et_n_estimators'], key="et_n_est"))
+        et_max_depth = int(st.number_input("Profondeur max (0 = illimitée)", 0, 50, default_params['et_max_depth'], key="et_depth"))
+    
+    elif model_choice == "decision_tree":
+        st.markdown("**Decision Tree**")
+        dt_max_depth = int(st.number_input("Profondeur max (0 = illimitée)", 0, 50, default_params['dt_max_depth'], key="dt_depth"))
+        dt_min_samples_split = int(st.number_input("Min samples split", 2, 20, default_params['dt_min_samples_split'], key="dt_split"))
+    
+    elif model_choice == "knn":
+        st.markdown("**K-Nearest Neighbors**")
+        knn_n_neighbors = int(st.number_input("Nombre de voisins (k)", 1, 50, default_params['knn_n_neighbors'], key="knn_k"))
+    
+    elif model_choice in ["svm", "svr"]:
+        st.markdown("**Support Vector Machine**")
+        svm_C = float(st.number_input("Paramètre C", 0.01, 100.0, default_params['svm_C'], key="svm_c"))
+        svm_kernel = st.selectbox("Kernel", ["rbf", "linear", "poly"], index=0, key="svm_kernel")
+    
+    elif model_choice == "ridge":
+        st.markdown("**Ridge Regression**")
+        ridge_alpha = float(st.number_input("Alpha (régularisation)", 0.01, 100.0, default_params['ridge_alpha'], key="ridge_alpha"))
+    
+    elif model_choice == "lasso":
+        st.markdown("**Lasso Regression**")
+        lasso_alpha = float(st.number_input("Alpha (régularisation)", 0.01, 100.0, default_params['lasso_alpha'], key="lasso_alpha"))
+    
+    elif model_choice in ["logistic_regression", "linear_regression"]:
+        st.markdown(f"**{model_display_choice}**")
+        st.info("Ce modèle n'a pas d'hyperparamètres à configurer.")
 
     if st.button("🚀 Lancer l'entraînement"):
         # Préprocessing pipeline (construit sans boucle coûteuse)
@@ -195,18 +295,67 @@ def run_modeling(df: pd.DataFrame) -> dict:
 
         preprocessor = ColumnTransformer(transformers=transformers, remainder="drop", verbose_feature_names_out=False)
 
-        # Choix du modèle (sans boucle)
-        if model_choice == "auto":
+        # Choix du modèle avec tous les hyperparamètres
+        if model_choice == "random_forest":
             if task == "classification":
                 model = RandomForestClassifier(n_estimators=rf_n_estimators, max_depth=None if rf_max_depth==0 else rf_max_depth, random_state=random_state)
             else:
                 model = RandomForestRegressor(n_estimators=rf_n_estimators, max_depth=None if rf_max_depth==0 else rf_max_depth, random_state=random_state)
-        elif model_choice == "random_forest":
-            model = RandomForestClassifier(n_estimators=rf_n_estimators, max_depth=None if rf_max_depth==0 else rf_max_depth, random_state=random_state) if task=="classification" else RandomForestRegressor(n_estimators=rf_n_estimators, max_depth=None if rf_max_depth==0 else rf_max_depth, random_state=random_state)
+        
         elif model_choice == "gradient_boosting":
-            model = GradientBoostingClassifier(n_estimators=gb_n_estimators, max_depth=gb_max_depth, learning_rate=gb_lr, random_state=random_state) if task=="classification" else GradientBoostingRegressor(n_estimators=gb_n_estimators, max_depth=gb_max_depth, learning_rate=gb_lr, random_state=random_state)
+            if task == "classification":
+                model = GradientBoostingClassifier(n_estimators=gb_n_estimators, max_depth=gb_max_depth, learning_rate=gb_lr, random_state=random_state)
+            else:
+                model = GradientBoostingRegressor(n_estimators=gb_n_estimators, max_depth=gb_max_depth, learning_rate=gb_lr, random_state=random_state)
+        
+        elif model_choice == "adaboost":
+            if task == "classification":
+                model = AdaBoostClassifier(n_estimators=ab_n_estimators, learning_rate=ab_lr, random_state=random_state)
+            else:
+                model = AdaBoostRegressor(n_estimators=ab_n_estimators, learning_rate=ab_lr, random_state=random_state)
+        
+        elif model_choice == "extra_trees":
+            if task == "classification":
+                model = ExtraTreesClassifier(n_estimators=et_n_estimators, max_depth=None if et_max_depth==0 else et_max_depth, random_state=random_state)
+            else:
+                model = ExtraTreesRegressor(n_estimators=et_n_estimators, max_depth=None if et_max_depth==0 else et_max_depth, random_state=random_state)
+        
+        elif model_choice == "decision_tree":
+            if task == "classification":
+                model = DecisionTreeClassifier(max_depth=None if dt_max_depth==0 else dt_max_depth, min_samples_split=dt_min_samples_split, random_state=random_state)
+            else:
+                model = DecisionTreeRegressor(max_depth=None if dt_max_depth==0 else dt_max_depth, min_samples_split=dt_min_samples_split, random_state=random_state)
+        
+        elif model_choice == "knn":
+            if task == "classification":
+                model = KNeighborsClassifier(n_neighbors=knn_n_neighbors)
+            else:
+                model = KNeighborsRegressor(n_neighbors=knn_n_neighbors)
+        
+        elif model_choice == "svm":
+            model = SVC(C=svm_C, kernel=svm_kernel, random_state=random_state)
+        
+        elif model_choice == "svr":
+            model = SVR(C=svm_C, kernel=svm_kernel)
+        
+        elif model_choice == "ridge":
+            model = Ridge(alpha=ridge_alpha, random_state=random_state)
+        
+        elif model_choice == "lasso":
+            model = Lasso(alpha=lasso_alpha, random_state=random_state)
+        
+        elif model_choice == "logistic_regression":
+            model = LogisticRegression(max_iter=1000, random_state=random_state)
+        
+        elif model_choice == "linear_regression":
+            model = LinearRegression()
+        
         else:
-            model = LogisticRegression(max_iter=1000) if task=="classification" else LinearRegression()
+            # Fallback
+            if task == "classification":
+                model = RandomForestClassifier(random_state=random_state)
+            else:
+                model = RandomForestRegressor(random_state=random_state)
 
         pipe = Pipeline([("preprocessor", preprocessor), ("model", model)])
 
@@ -243,8 +392,10 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "y_train": y_train,
             "y_test": y_test,
             "task": task,
+            "task_type": task,
             "y_pred": preds,
-            "evaluation_metrics": pd.DataFrame([metrics_display])
+            "evaluation_metrics": pd.DataFrame([metrics_display]),
+            "current_model_name": model_display_choice  # Stocker le nom du modèle pour l'évaluation
         })
 
         # Feature importance si disponible (essayer d'extraire proprement)
