@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import helpers
 import metrics
+import model_utils  # Import du nouveau module d'utilitaires
 
 
 class ModelComparator:
@@ -78,36 +79,8 @@ class ModelComparator:
     
     def build_preprocessor(self, X: pd.DataFrame, do_scale: bool = True) -> ColumnTransformer:
         """Construit le preprocesseur pour les données"""
-        num_cols = X.select_dtypes(include="number").columns.tolist()
-        cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
-        
-        if cat_cols:
-            X[cat_cols] = X[cat_cols].astype(str)
-        
-        num_steps = []
-        if num_cols:
-            num_steps = [("imputer", SimpleImputer(strategy="median"))]
-            if do_scale:
-                num_steps.append(("scaler", StandardScaler()))
-        
-        cat_steps = []
-        if cat_cols:
-            cat_steps = [
-                ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
-            ]
-        
-        transformers = []
-        if num_cols:
-            transformers.append(("num", Pipeline(num_steps), num_cols))
-        if cat_cols:
-            transformers.append(("cat", Pipeline(cat_steps), cat_cols))
-        
-        return ColumnTransformer(
-            transformers=transformers,
-            remainder="drop",
-            verbose_feature_names_out=False
-        )
+        # Utilisation de la fonction commune de model_utils
+        return model_utils.build_preprocessor(X, do_scale)
     
     def train_and_evaluate(
         self,
@@ -402,25 +375,17 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     X = df.drop(columns=[target])
     y = df[target]
     
-    # Validation de la cible (réutiliser la logique de modeling.py)
-    st.markdown("### 🔍 Validation des Données")
-    
-    # Traitement des valeurs manquantes
-    y_missing = y.isna().sum()
-    if y_missing > 0:
-        st.warning(f"⚠️ Variable cible contient {y_missing} valeurs manquantes ({y_missing/len(y)*100:.1f}%)")
-        valid_idx = y.notna()
+    # Validation de la cible avec model_utils
+    y, valid_idx = model_utils.validate_and_clean_target(y, target)
+    if not valid_idx.all():
         X = X[valid_idx].reset_index(drop=True)
-        y = y[valid_idx].reset_index(drop=True)
-        st.success(f"✅ {y_missing} lignes supprimées. Nouvelles dimensions : {len(y)} lignes")
     
-    # Détection automatique de la tâche
-    if y.dtype == "O" or (y.nunique() <= 20 and y.nunique()/len(y) < 0.1):
-        task = "classification"
-    else:
-        task = "regression"
-    
+    # Détection automatique de la tâche avec model_utils
+    task = model_utils.detect_task_type(y)
     st.info(f"📊 Tâche détectée : **{task.upper()}**")
+    
+    # Afficher les statistiques avec model_utils
+    model_utils.display_target_stats(y, task)
     
     # Configuration
     st.markdown("### ⚙️ Configuration")
@@ -451,10 +416,8 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             st.session_state.selected_models = available_models
     with col2:
         if st.button("🚀 Modèles rapides"):
-            st.session_state.selected_models = [
-                "Random Forest", "Logistic Regression" if task == "classification" else "Linear Regression",
-                "Decision Tree"
-            ]
+            # Utilisation de la fonction commune
+            st.session_state.selected_models = model_utils.get_fast_models(task)
     with col3:
         if st.button("❌ Tout désélectionner"):
             st.session_state.selected_models = []
@@ -548,17 +511,25 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                     except Exception as e:
                         st.error(f"❌ Erreur lors de la sauvegarde : {str(e)}")
             
-            # Stocker dans session_state pour utilisation ultérieure
+            # Stocker dans session_state de manière cohérente avec model_utils
+            best_model_pipeline = comparator.models.get(comparator.best_model)
+            
+            # Stocker le modèle avec la fonction commune
+            model_utils.store_model_in_session(
+                model=best_model_pipeline,
+                X_train=X_train,
+                X_test=X_test,
+                y_train=y_train,
+                y_test=y_test,
+                task=task,
+                model_name=comparator.best_model
+            )
+            
+            # Stocker les résultats de comparaison
             st.session_state.update({
                 "comparison_results": results_df,
                 "comparator": comparator,
-                "best_model_name": comparator.best_model,
-                "best_model": comparator.models.get(comparator.best_model),
-                "X_train": X_train,
-                "X_test": X_test,
-                "y_train": y_train,
-                "y_test": y_test,
-                "task": task
+                "best_model": best_model_pipeline
             })
             
             return {
