@@ -35,6 +35,10 @@ def _img_to_base64(fig, width=800):
     plt.close(fig)
     return f'<div class="figure-container"><img src="data:image/png;base64,{img_str}" style="max-width:{width}px; width:100%; height:auto;"></div>'
 
+def _wrap_table(table_html: str) -> str:
+    """Enveloppe un tableau HTML dans un container scrollable"""
+    return f'<div class="table-container">{table_html}</div>'
+
 def _get_modern_css():
     """Retourne le CSS moderne pour le rapport"""
     return """
@@ -126,33 +130,55 @@ def _get_modern_css():
             display: block;
         }
         
+        /* Container pour tableaux avec scroll horizontal */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
             background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
+            min-width: 600px;  /* Largeur minimale pour éviter l'écrasement */
+        }
+        
+        /* Tableaux compacts pour aperçu et stats */
+        table.dataframe {
+            font-size: 0.85em;  /* Texte plus petit */
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
         }
         
         thead {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         th {
-            padding: 15px;
+            padding: 10px 8px;  /* Padding réduit */
             text-align: left;
             font-weight: 600;
-            font-size: 0.95em;
+            font-size: 0.85em;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
         
         td {
-            padding: 12px 15px;
+            padding: 8px 8px;  /* Padding réduit */
             border-bottom: 1px solid #ecf0f1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;  /* Largeur max par cellule */
         }
         
         tbody tr:hover {
@@ -162,6 +188,24 @@ def _get_modern_css():
         
         tbody tr:nth-child(even) {
             background: #f9f9f9;
+        }
+        
+        /* Indicateur de scroll */
+        .table-container::after {
+            content: "← Faites défiler horizontalement →";
+            display: block;
+            text-align: center;
+            font-size: 0.75em;
+            color: #95a5a6;
+            padding: 5px;
+            font-style: italic;
+        }
+        
+        /* Masquer l'indicateur si pas de scroll nécessaire */
+        @media (min-width: 1400px) {
+            .table-container::after {
+                display: none;
+            }
         }
         
         .figure-container {
@@ -315,10 +359,10 @@ def generate_report(session_state: dict):
                 html.append('</div>')
                 
                 html.append("<h3>📋 Aperçu des données (5 premières lignes)</h3>")
-                html.append(df.head(5).to_html(index=False, classes='dataframe'))
+                html.append(_wrap_table(df.head(5).to_html(index=False, classes='dataframe')))
                 
                 html.append("<h3>📊 Statistiques descriptives</h3>")
-                html.append(df.describe().round(3).to_html(classes='dataframe'))
+                html.append(_wrap_table(df.describe().round(3).to_html(classes='dataframe')))
                 
                 # Valeurs manquantes
                 missing = df.isna().sum()
@@ -330,7 +374,7 @@ def generate_report(session_state: dict):
                         'Pourcentage': (missing.values / len(df) * 100).round(2)
                     })
                     missing_df = missing_df[missing_df['Manquantes'] > 0].sort_values('Manquantes', ascending=False)
-                    html.append(missing_df.to_html(index=False, classes='dataframe'))
+                    html.append(_wrap_table(missing_df.to_html(index=False, classes='dataframe')))
                 
                 # Visualisations
                 if include_plots:
@@ -373,10 +417,10 @@ def generate_report(session_state: dict):
                 
                 if "correction_log" in session_state:
                     html.append("<h3>📝 Log des corrections appliquées</h3>")
-                    html.append(session_state["correction_log"].to_html(index=False, classes='dataframe'))
+                    html.append(_wrap_table(session_state["correction_log"].to_html(index=False, classes='dataframe')))
                 
                 html.append("<h3>📋 Aperçu des données nettoyées</h3>")
-                html.append(cdf.head(5).to_html(index=False, classes='dataframe'))
+                html.append(_wrap_table(cdf.head(5).to_html(index=False, classes='dataframe')))
 
             # 3. Modèle
             if "Modèle" in report_sections and "model" in session_state:
