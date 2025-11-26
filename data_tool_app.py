@@ -195,8 +195,18 @@ st.markdown("Bienvenue dans ton outil de projet data interactif 🚀")
 st.sidebar.title("📌 Navigation")
 section = st.sidebar.radio(
     "Aller à :",
-    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🤖 Modélisation", "🔬 Comparaison de Modèles", "📈 Évaluation", "📝 Reporting"]
+    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"]
 )
+
+# Messages d'aide dans la sidebar
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💡 Guide Rapide")
+if section == "🔬 Comparaison de Modèles":
+    st.sidebar.info("⭐ **Commencez ici** pour explorer plusieurs modèles automatiquement")
+elif section == "🎯 Affinage de Modèle":
+    st.sidebar.info("🎯 **Optionnel** : Optimisez un modèle spécifique avec tuning fin")
+elif section == "📈 Évaluation":
+    st.sidebar.info("📊 Analysez votre modèle en détail après comparaison ou affinage")
 
 # ------------------------
 # Sections
@@ -275,8 +285,19 @@ elif section == "🛠️ Prétraitement":
     else:
         st.warning("⚠️ Chargez d'abord les données.")
 
-elif section == "🤖 Modélisation":
-    st.header("🤖 Modélisation")
+elif section == "🎯 Affinage de Modèle":
+    st.header("🎯 Affinage de Modèle")
+    
+    # Message d'orientation
+    st.info("""
+    💡 **Quand utiliser cette section ?**
+    - Vous voulez configurer finement les hyperparamètres d'un modèle spécifique
+    - Vous avez déjà identifié un modèle prometteur via la Comparaison
+    - Vous voulez un contrôle total sur l'entraînement
+    
+    ⭐ **Nouveau ?** Commencez plutôt par "🔬 Comparaison de Modèles" pour explorer rapidement !
+    """)
+    
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
     if df_to_use is not None:
         res = modeling.run_modeling(df_to_use)
@@ -291,23 +312,89 @@ elif section == "🤖 Modélisation":
             "model": res["pipeline"], "X_train": res["X_train"], "X_test": res["X_test"],
             "y_train": res["y_train"], "y_test": res["y_test"], "task_type": res["task"]
         })
+        
+        # Bouton pour aller à l'évaluation
+        st.markdown("---")
+        st.markdown("### 🎯 Prochaine Étape")
+        if st.button("📈 Évaluer ce modèle", type="primary"):
+            st.info("✅ Votre modèle est prêt ! Allez dans '📈 Évaluation' pour l'analyser en détail.")
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
 elif section == "🔬 Comparaison de Modèles":
     st.header("🔬 Comparaison de Modèles ML")
+    
+    # Message d'accueil
+    st.success("""
+    ⭐ **Point d'entrée recommandé pour la modélisation !**
+    
+    Cette section vous permet de :
+    - 🚀 Comparer 9-10 modèles automatiquement
+    - 📊 Identifier le meilleur modèle en quelques secondes
+    - 📈 Visualiser les performances côte à côte
+    - 💾 Exporter et sauvegarder les résultats
+    """)
+    
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
     if df_to_use is not None:
         model_comparison.run_model_comparison(df_to_use)
+        
+        # Boutons de navigation après comparaison
+        if "comparison_results" in st.session_state and "best_model" in st.session_state:
+            st.markdown("---")
+            st.markdown("### 🎯 Prochaines Étapes Recommandées")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown("**📈 Analyser en détail**")
+                st.write("Évaluez le meilleur modèle avec des graphiques détaillés")
+                if st.button("📈 Aller à l'Évaluation", key="goto_eval"):
+                    st.info("✅ Allez dans '📈 Évaluation' pour analyser le modèle")
+            
+            with col2:
+                st.markdown("**🎯 Optimiser davantage**")
+                st.write("Affinez les hyperparamètres du meilleur modèle")
+                if st.button("🎯 Aller à l'Affinage", key="goto_tuning"):
+                    st.info("✅ Allez dans '🎯 Affinage de Modèle' pour optimiser")
+            
+            with col3:
+                st.markdown("**📝 Créer le rapport**")
+                st.write("Générez un rapport HTML complet")
+                if st.button("📝 Aller au Reporting", key="goto_report"):
+                    st.info("✅ Allez dans '📝 Reporting' pour générer le rapport")
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
 elif section == "📈 Évaluation":
     st.header("📈 Évaluation du modèle")
+    
+    # Détecter la source du modèle
+    if "best_model_name" in st.session_state:
+        st.success(f"🏆 **Modèle sélectionné** : {st.session_state['best_model_name']}")
+        if "comparator" in st.session_state:
+            st.info(f"📊 **Score** : {st.session_state['comparator'].best_score:.4f}")
+    
     if "model" in st.session_state:
         evaluation.run_evaluation(st.session_state["model"], st.session_state["X_test"], st.session_state["y_test"])
+        
+        # Bouton pour le reporting
+        st.markdown("---")
+        st.markdown("### 🎯 Prochaine Étape")
+        if st.button("📝 Générer le Rapport Complet", type="primary"):
+            st.info("✅ Allez dans '📝 Reporting' pour créer un rapport HTML complet")
     else:
         st.warning("⚠️ Entraînez un modèle d'abord.")
+        st.info("""
+        💡 **Comment obtenir un modèle à évaluer ?**
+        
+        **Option 1 (Recommandée)** : Allez dans "🔬 Comparaison de Modèles"
+        - Comparez plusieurs modèles automatiquement
+        - Le meilleur sera automatiquement sélectionné
+        
+        **Option 2** : Allez dans "🎯 Affinage de Modèle"
+        - Configurez et entraînez un modèle spécifique
+        """)
 
 elif section == "📝 Reporting":
     st.header("📝 Reporting")
