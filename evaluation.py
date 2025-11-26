@@ -22,23 +22,9 @@ def run_evaluation(model, X_test, y_test):
     if model_name:
         # Modèle vient de l'affinage
         st.success(f"🎯 **Modèle évalué** : {model_name}")
-        
-        # Afficher les métriques si disponibles
-        if "evaluation_metrics" in st.session_state and not st.session_state["evaluation_metrics"].empty:
-            metrics_df = st.session_state["evaluation_metrics"]
-            st.info(f"📊 **Performance** : {metrics_df.to_dict('records')[0]}")
     elif best_model_name:
         # Modèle vient de la comparaison
         st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model_name}")
-        
-        # Récupérer le score si disponible
-        if "comparison_results" in st.session_state:
-            comparison_results = st.session_state["comparison_results"]
-            best_row = comparison_results[comparison_results['Modèle'] == best_model_name]
-            if not best_row.empty:
-                score_col = 'Accuracy' if 'Accuracy' in comparison_results.columns else 'R²'
-                best_score = best_row[score_col].values[0]
-                st.info(f"📊 **Score de la comparaison** : {score_col} = {best_score:.4f}")
     else:
         st.info("ℹ️ Modèle entraîné")
     

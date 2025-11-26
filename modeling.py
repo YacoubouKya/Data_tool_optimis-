@@ -207,7 +207,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
     
     do_scale = st.checkbox("⚙️ Standardiser les numériques", value=True)
 
-    # Hyperparamètres par défaut (peuvent être écrasés par ceux de la comparaison)
+    # Hyperparamètres par défaut
     default_params = {
         'rf_n_estimators': 100, 'rf_max_depth': 0,
         'gb_n_estimators': 100, 'gb_max_depth': 3, 'gb_lr': 0.1,
@@ -219,6 +219,64 @@ def run_modeling(df: pd.DataFrame) -> dict:
         'ridge_alpha': 1.0,
         'lasso_alpha': 1.0
     }
+    
+    # Extraire les hyperparamètres du meilleur modèle de la comparaison si disponible
+    if from_comparison and "best_model" in st.session_state and model_display_choice == st.session_state.get("best_model_name"):
+        try:
+            best_pipeline = st.session_state["best_model"]
+            if best_pipeline and hasattr(best_pipeline, "named_steps"):
+                best_model_obj = best_pipeline.named_steps.get("model")
+                
+                if best_model_obj:
+                    # Extraire les paramètres selon le type de modèle
+                    params = best_model_obj.get_params()
+                    
+                    # Random Forest
+                    if "RandomForest" in str(type(best_model_obj)):
+                        default_params['rf_n_estimators'] = params.get('n_estimators', 100)
+                        default_params['rf_max_depth'] = params.get('max_depth') or 0
+                    
+                    # Gradient Boosting
+                    elif "GradientBoosting" in str(type(best_model_obj)):
+                        default_params['gb_n_estimators'] = params.get('n_estimators', 100)
+                        default_params['gb_max_depth'] = params.get('max_depth', 3)
+                        default_params['gb_lr'] = params.get('learning_rate', 0.1)
+                    
+                    # AdaBoost
+                    elif "AdaBoost" in str(type(best_model_obj)):
+                        default_params['ab_n_estimators'] = params.get('n_estimators', 50)
+                        default_params['ab_lr'] = params.get('learning_rate', 1.0)
+                    
+                    # Extra Trees
+                    elif "ExtraTrees" in str(type(best_model_obj)):
+                        default_params['et_n_estimators'] = params.get('n_estimators', 100)
+                        default_params['et_max_depth'] = params.get('max_depth') or 0
+                    
+                    # Decision Tree
+                    elif "DecisionTree" in str(type(best_model_obj)):
+                        default_params['dt_max_depth'] = params.get('max_depth') or 0
+                        default_params['dt_min_samples_split'] = params.get('min_samples_split', 2)
+                    
+                    # KNN
+                    elif "KNeighbors" in str(type(best_model_obj)):
+                        default_params['knn_n_neighbors'] = params.get('n_neighbors', 5)
+                    
+                    # SVM/SVR
+                    elif "SVC" in str(type(best_model_obj)) or "SVR" in str(type(best_model_obj)):
+                        default_params['svm_C'] = params.get('C', 1.0)
+                        default_params['svm_kernel'] = params.get('kernel', 'rbf')
+                    
+                    # Ridge
+                    elif "Ridge" in str(type(best_model_obj)):
+                        default_params['ridge_alpha'] = params.get('alpha', 1.0)
+                    
+                    # Lasso
+                    elif "Lasso" in str(type(best_model_obj)):
+                        default_params['lasso_alpha'] = params.get('alpha', 1.0)
+                    
+                    st.success("✨ Hyperparamètres du meilleur modèle chargés automatiquement")
+        except Exception as e:
+            st.warning(f"⚠️ Impossible d'extraire les hyperparamètres : {str(e)}")
     
     st.markdown("### ⚙️ Configuration des Hyperparamètres")
     
