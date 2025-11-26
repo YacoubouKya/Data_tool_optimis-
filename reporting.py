@@ -374,7 +374,7 @@ def generate_report(session_state: dict):
                         'Pourcentage': (missing.values / len(df) * 100).round(2)
                     })
                     missing_df = missing_df[missing_df['Manquantes'] > 0].sort_values('Manquantes', ascending=False)
-                    html.append(_wrap_table(missing_df.to_html(index=False, classes='dataframe')))
+                    html.append(missing_df.to_html(index=False, classes='dataframe'))
                 
                 # Visualisations
                 if include_plots:
@@ -417,7 +417,7 @@ def generate_report(session_state: dict):
                 
                 if "correction_log" in session_state:
                     html.append("<h3>📝 Log des corrections appliquées</h3>")
-                    html.append(_wrap_table(session_state["correction_log"].to_html(index=False, classes='dataframe')))
+                    html.append(session_state["correction_log"].to_html(index=False, classes='dataframe'))
                 
                 html.append("<h3>📋 Aperçu des données nettoyées</h3>")
                 html.append(_wrap_table(cdf.head(5).to_html(index=False, classes='dataframe')))
