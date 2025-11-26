@@ -410,20 +410,53 @@ def generate_report(session_state: dict):
                     html.append('</div>')
                 
                 # Feature importance
-                if "feature_importance" in session_state and include_plots:
+                if "feature_importance" in session_state:
                     fi = session_state["feature_importance"]
                     html.append("<h3>🎯 Importance des features</h3>")
                     
-                    fig, ax = plt.subplots(figsize=(12, max(6, len(fi) * 0.3)))
-                    fi_top = fi.head(20)  # Top 20 features
-                    colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(fi_top)))
-                    fi_top.plot(kind='barh', ax=ax, color=colors)
-                    ax.set_xlabel("Importance", fontsize=12, fontweight='bold')
-                    ax.set_ylabel("Features", fontsize=12, fontweight='bold')
-                    ax.set_title("Top 20 des features les plus importantes", fontsize=14, fontweight='bold', pad=20)
-                    ax.grid(True, alpha=0.3, axis='x')
-                    plt.tight_layout()
-                    html.append(_img_to_base64(fig, width=1000))
+                    # Limiter au Top 10 pour la compacité
+                    fi_top = fi.head(10)
+                    
+                    # Créer un tableau compact avec les valeurs
+                    fi_df = pd.DataFrame({
+                        'Feature': fi_top.index,
+                        'Importance': fi_top.values,
+                        'Importance (%)': (fi_top.values / fi_top.sum() * 100).round(2)
+                    })
+                    
+                    html.append("<h4>📊 Top 10 des features les plus importantes</h4>")
+                    html.append(fi_df.to_html(index=False, classes='dataframe'))
+                    
+                    # Graphique compact uniquement si visualisations activées
+                    if include_plots:
+                        # Graphique horizontal compact avec taille fixe
+                        fig, ax = plt.subplots(figsize=(10, 5))  # Taille fixe compacte
+                        
+                        # Barres horizontales avec dégradé
+                        colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(fi_top)))
+                        bars = ax.barh(range(len(fi_top)), fi_top.values, color=colors, edgecolor='white', linewidth=0.5)
+                        
+                        # Inverser l'ordre pour avoir le plus important en haut
+                        ax.set_yticks(range(len(fi_top)))
+                        ax.set_yticklabels(fi_top.index)
+                        ax.invert_yaxis()
+                        
+                        # Labels et style
+                        ax.set_xlabel("Importance", fontsize=11, fontweight='bold')
+                        ax.set_title("Visualisation des Top 10 Features", fontsize=12, fontweight='bold', pad=15)
+                        ax.grid(True, alpha=0.3, axis='x', linestyle='--')
+                        
+                        # Ajouter les valeurs sur les barres
+                        for i, (bar, value) in enumerate(zip(bars, fi_top.values)):
+                            width = bar.get_width()
+                            ax.text(width, bar.get_y() + bar.get_height()/2, 
+                                   f'{value:.4f}', 
+                                   ha='left', va='center', fontsize=9, 
+                                   fontweight='bold', color='#2c3e50',
+                                   bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='none'))
+                        
+                        plt.tight_layout()
+                        html.append(_img_to_base64(fig, width=800))
 
             # 4. Évaluation
             if "Évaluation" in report_sections and "evaluation_metrics" in session_state:
