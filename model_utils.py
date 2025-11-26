@@ -11,7 +11,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 
 
 def validate_and_clean_target(y: pd.Series, target_name: str) -> Tuple[pd.Series, pd.DataFrame]:
