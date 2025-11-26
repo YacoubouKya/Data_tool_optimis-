@@ -1,7 +1,7 @@
 # app.py
 import streamlit as st
 import pandas as pd
-import data_loader, eda, preprocessing, modeling, evaluation, reporting
+import data_loader, eda, preprocessing, modeling, evaluation, reporting, model_comparison
 from sklearn.model_selection import train_test_split
 
 # ------------------------
@@ -195,7 +195,7 @@ st.markdown("Bienvenue dans ton outil de projet data interactif 🚀")
 st.sidebar.title("📌 Navigation")
 section = st.sidebar.radio(
     "Aller à :",
-    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🤖 Modélisation", "📈 Évaluation", "📝 Reporting"]
+    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🤖 Modélisation", "🔬 Comparaison de Modèles", "📈 Évaluation", "📝 Reporting"]
 )
 
 # ------------------------
@@ -291,6 +291,14 @@ elif section == "🤖 Modélisation":
             "model": res["pipeline"], "X_train": res["X_train"], "X_test": res["X_test"],
             "y_train": res["y_train"], "y_test": res["y_test"], "task_type": res["task"]
         })
+    else:
+        st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
+
+elif section == "🔬 Comparaison de Modèles":
+    st.header("🔬 Comparaison de Modèles ML")
+    df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
+    if df_to_use is not None:
+        model_comparison.run_model_comparison(df_to_use)
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
