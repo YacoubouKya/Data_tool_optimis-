@@ -50,12 +50,24 @@ def run_modeling(df: pd.DataFrame) -> dict:
         # Récupérer le score du meilleur modèle
         best_row = comparison_results[comparison_results['Modèle'] == best_model]
         if not best_row.empty:
-            # Trouver la colonne de score principal (Accuracy ou R²)
-            score_col = 'Accuracy' if 'Accuracy' in comparison_results.columns else 'R²'
-            best_score = best_row[score_col].values[0]
+            # Trouver la colonne de score principal (vérifier différentes variantes)
+            score_col = None
+            score_value = None
             
-            st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model} (Score: {best_score:.4f})")
-            st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
+            # Essayer différentes variantes de noms de colonnes
+            possible_score_cols = ['ACCURACY', 'Accuracy', 'accuracy', 'R2', 'R²', 'r2']
+            for col in possible_score_cols:
+                if col in comparison_results.columns:
+                    score_col = col
+                    score_value = best_row[col].values[0]
+                    break
+            
+            if score_col and score_value is not None:
+                st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model} (Score: {score_value:.4f})")
+                st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
+            else:
+                st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model}")
+                st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
         else:
             st.success(f"🏆 **Meilleur modèle détecté** : {best_model}")
             st.info("💡 Vous pouvez affiner ce modèle ou en choisir un autre")
