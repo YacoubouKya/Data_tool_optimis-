@@ -193,9 +193,18 @@ st.markdown("Bienvenue dans ton outil de projet data interactif 🚀")
 # 📌 Sidebar Navigation
 # ------------------------
 st.sidebar.title("📌 Navigation")
+
+# Gérer la navigation automatique via session_state
+if "target_section" in st.session_state:
+    default_index = ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"].index(st.session_state.target_section)
+    del st.session_state.target_section
+else:
+    default_index = 0
+
 section = st.sidebar.radio(
     "Aller à :",
-    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"]
+    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"],
+    index=default_index
 )
 
 # Messages d'aide dans la sidebar
@@ -317,7 +326,8 @@ elif section == "🎯 Affinage de Modèle":
         st.markdown("---")
         st.markdown("### 🎯 Prochaine Étape")
         if st.button("📈 Évaluer ce modèle", type="primary"):
-            st.info("✅ Votre modèle est prêt ! Allez dans '📈 Évaluation' pour l'analyser en détail.")
+            st.session_state.target_section = "📈 Évaluation"
+            st.rerun()
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
@@ -350,19 +360,22 @@ elif section == "🔬 Comparaison de Modèles":
                 st.markdown("**📈 Analyser en détail**")
                 st.write("Évaluez le meilleur modèle avec des graphiques détaillés")
                 if st.button("📈 Aller à l'Évaluation", key="goto_eval"):
-                    st.info("✅ Allez dans '📈 Évaluation' pour analyser le modèle")
+                    st.session_state.target_section = "📈 Évaluation"
+                    st.rerun()
             
             with col2:
                 st.markdown("**🎯 Optimiser davantage**")
                 st.write("Affinez les hyperparamètres du meilleur modèle")
                 if st.button("🎯 Aller à l'Affinage", key="goto_tuning"):
-                    st.info("✅ Allez dans '🎯 Affinage de Modèle' pour optimiser")
+                    st.session_state.target_section = "🎯 Affinage de Modèle"
+                    st.rerun()
             
             with col3:
                 st.markdown("**📝 Créer le rapport**")
                 st.write("Générez un rapport HTML complet")
                 if st.button("📝 Aller au Reporting", key="goto_report"):
-                    st.info("✅ Allez dans '📝 Reporting' pour générer le rapport")
+                    st.session_state.target_section = "📝 Reporting"
+                    st.rerun()
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
@@ -382,7 +395,8 @@ elif section == "📈 Évaluation":
         st.markdown("---")
         st.markdown("### 🎯 Prochaine Étape")
         if st.button("📝 Générer le Rapport Complet", type="primary"):
-            st.info("✅ Allez dans '📝 Reporting' pour créer un rapport HTML complet")
+            st.session_state.target_section = "📝 Reporting"
+            st.rerun()
     else:
         st.warning("⚠️ Entraînez un modèle d'abord.")
         st.info("""

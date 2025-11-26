@@ -409,26 +409,36 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     comparator = ModelComparator(task=task)
     available_models = list(comparator.get_available_models().keys())
     
+    # Initialiser selected_models dans session_state si nécessaire
+    if "selected_models" not in st.session_state:
+        st.session_state.selected_models = ["Random Forest", "Gradient Boosting"]
+    
     # Options de sélection rapide
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("✅ Tout sélectionner"):
             st.session_state.selected_models = available_models
+            st.rerun()
     with col2:
         if st.button("🚀 Modèles rapides"):
             # Utilisation de la fonction commune
             st.session_state.selected_models = model_utils.get_fast_models(task)
+            st.rerun()
     with col3:
         if st.button("❌ Tout désélectionner"):
             st.session_state.selected_models = []
+            st.rerun()
     
     # Multiselect pour les modèles
     selected_models = st.multiselect(
         "Choisir les modèles à comparer",
         available_models,
-        default=st.session_state.get("selected_models", ["Random Forest", "Gradient Boosting"]),
+        default=st.session_state.selected_models,
         key="model_multiselect"
     )
+    
+    # Mettre à jour session_state avec la sélection actuelle
+    st.session_state.selected_models = selected_models
     
     if len(selected_models) == 0:
         st.warning("⚠️ Veuillez sélectionner au moins un modèle")

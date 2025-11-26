@@ -12,6 +12,7 @@ import joblib
 from typing import Tuple, Any
 import helpers
 import metrics
+import model_utils
 from math import isfinite
 
 def _format_metrics(d: dict, decimals=3):
@@ -30,9 +31,26 @@ def _format_metrics(d: dict, decimals=3):
 
 def run_modeling(df: pd.DataFrame) -> dict:
     st.subheader("⚡ Modélisation interactive")
+    
+    # Détecter si on vient de la comparaison
+    from_comparison = "best_model_name" in st.session_state and "comparison_results" in st.session_state
+    
+    if from_comparison:
+        st.success(f"🏆 **Meilleur modèle détecté** : {st.session_state['best_model_name']}")
+        st.info("💡 Vous pouvez affiner ce modèle ou en choisir un autre")
 
     cols = df.columns.tolist()
-    target = st.selectbox("Choisir la variable cible", [""] + cols)
+    
+    # Pré-remplir la cible si elle existe déjà
+    default_target = ""
+    if "y_train" in st.session_state and hasattr(st.session_state["y_train"], "name"):
+        default_target = st.session_state["y_train"].name
+    
+    target_index = 0
+    if default_target and default_target in cols:
+        target_index = cols.index(default_target) + 1
+    
+    target = st.selectbox("Choisir la variable cible", [""] + cols, index=target_index)
     if not target:
         st.info("Sélectionne une variable cible pour lancer l'entraînement.")
         st.stop()
@@ -106,7 +124,36 @@ def run_modeling(df: pd.DataFrame) -> dict:
     test_size = st.slider("Taille test (%)", 5, 50, 20) / 100.0
     random_state = int(st.number_input("Seed aléatoire", value=42))
 
-    model_choice = st.selectbox("Choisir un modèle", ["auto", "random_forest", "gradient_boosting", "linear/logistic"])
+    # Si on vient de la comparaison, proposer les modèles testés
+    if from_comparison and "comparison_results" in st.session_state:
+        st.markdown("### 🎯 Sélection du Modèle")
+        
+        comparison_models = st.session_state["comparison_results"]["Modèle"].tolist()
+        best_model_name = st.session_state.get("best_model_name", comparison_models[0])
+        
+        # Mapper les noms de la comparaison vers les choix de modeling
+        model_mapping = {
+            "Random Forest": "random_forest",
+            "Gradient Boosting": "gradient_boosting",
+            "Logistic Regression": "linear/logistic",
+            "Linear Regression": "linear/logistic"
+        }
+        
+        # Sélection avec le meilleur modèle par défaut
+        model_display_choice = st.selectbox(
+            "Choisir le modèle à affiner",
+            comparison_models,
+            index=comparison_models.index(best_model_name) if best_model_name in comparison_models else 0,
+            help="Le meilleur modèle de la comparaison est sélectionné par défaut"
+        )
+        
+        # Convertir vers le format de modeling.py
+        model_choice = model_mapping.get(model_display_choice, "auto")
+        
+        st.info(f"💡 Modèle sélectionné : **{model_display_choice}**")
+    else:
+        model_choice = st.selectbox("Choisir un modèle", ["auto", "random_forest", "gradient_boosting", "linear/logistic"])
+    
     do_scale = st.checkbox("⚙️ Standardiser les numériques", value=True)
 
     # Hyperparamètres exposés
