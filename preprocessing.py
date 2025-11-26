@@ -303,7 +303,6 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
     uploaded_dict = st.file_uploader(
         "Charger votre dictionnaire (Excel ou CSV)",
         type=['xlsx', 'xls', 'csv'],
-        key="dict_uploader",
         help="Le dictionnaire doit contenir les colonnes : Colonne, Type, Obligatoire, Valeurs_Autorisées, Min, Max, Format, Action_Si_Anomalie"
     )
     
@@ -354,9 +353,10 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
             return
         
         st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
-        
-        with st.expander("👁️ Aperçu du dictionnaire"):
-            st.dataframe(dictionnaire)
+
+        # Aperçu complet du dictionnaire (sans expander)
+        st.markdown("#### 👁️ Aperçu complet du dictionnaire")
+        st.dataframe(dictionnaire, use_container_width=True)
     
     except Exception as e:
         st.error(f"❌ Erreur lors du chargement du dictionnaire : {e}")
@@ -383,13 +383,14 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
     if cols_with_nan:
         st.warning(f"⚠️ {len(cols_with_nan)} colonnes contiennent des valeurs manquantes")
         
-        with st.expander("📊 Détail des valeurs manquantes par colonne"):
-            missing_df = pd.DataFrame({
-                'Colonne': cols_with_nan,
-                'NaN': [df[col].isna().sum() for col in cols_with_nan],
-                'Pourcentage': [f"{(df[col].isna().sum()/len(df))*100:.1f}%" for col in cols_with_nan]
-            }).sort_values('NaN', ascending=False)
-            st.dataframe(missing_df, use_container_width=True)
+        # Détail des valeurs manquantes affiché directement (sans expander)
+        st.markdown("#### 📊 Détail des valeurs manquantes par colonne")
+        missing_df = pd.DataFrame({
+            'Colonne': cols_with_nan,
+            'NaN': [df[col].isna().sum() for col in cols_with_nan],
+            'Pourcentage': [f"{(df[col].isna().sum()/len(df))*100:.1f}%" for col in cols_with_nan]
+        }).sort_values('NaN', ascending=False)
+        st.dataframe(missing_df, use_container_width=True)
         
         # Proposer un nettoyage préalable
         st.markdown("**Options de pré-nettoyage** :")

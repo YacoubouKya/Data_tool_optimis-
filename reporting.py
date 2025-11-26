@@ -605,13 +605,13 @@ def generate_report(session_state: dict):
                 f.write("\n".join(html))
             
             st.success(f"✅ Rapport généré avec succès !")
-            
-            # Afficher un aperçu
-            with st.expander("📄 Aperçu du rapport", expanded=False):
-                st.info(f"**Chemin :** `{out_path}`")
-                st.info(f"**Taille :** {os.path.getsize(out_path) / 1024:.1f} KB")
-                st.info(f"**Sections incluses :** {', '.join(report_sections)}")
-            
+
+            # Aperçu du rapport (sans expander)
+            st.markdown("#### 📄 Aperçu du rapport généré")
+            st.info(f"**Chemin :** `{out_path}`")
+            st.info(f"**Taille :** {os.path.getsize(out_path) / 1024:.1f} KB")
+            st.info(f"**Sections incluses :** {', '.join(report_sections)}")
+
             # Bouton de téléchargement
             with open(out_path, "rb") as f:
                 st.download_button(

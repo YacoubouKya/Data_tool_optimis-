@@ -59,13 +59,13 @@ h1, h2, h3, h4 { color: #FFD700; font-family: 'Segoe UI', sans-serif; }
 }
 
 [data-testid="stFileUploader"] * {
-    color: #1E3A5F !important;
+    color: #FFFFFF !important;
     font-weight: 600;
 }
 
 [data-testid="stFileUploaderDropzone"] {
-    background-color: #FFF6BF !important;
-    border: 2px dashed #1E3A5F !important;
+    background-color: #111827 !important; /* noir/gris légèrement éclairci pour la zone de drop */
+    border: 2px dashed #FFD700 !important; /* bordure jaune pour rester cohérent avec le thème */
 }
 
 /********* RADIO + SELECTBOX (fix complet) *********/
