@@ -37,6 +37,90 @@ def _format_metrics(d: dict, decimals=3):
             out[k] = v
     return out
 
+def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
+    """
+    Valide que les données sont prêtes pour la modélisation
+    Retourne True si les données sont valides, False sinon
+    """
+    st.markdown("#### 🔍 Validation pré-modélisation")
+    
+    validation_passed = True
+    warnings = []
+    errors = []
+    
+    # 1. Vérifier que X n'est pas vide
+    if X.shape[0] == 0:
+        errors.append("❌ Le DataFrame X est vide (0 lignes)")
+        validation_passed = False
+    
+    if X.shape[1] == 0:
+        errors.append("❌ Le DataFrame X n'a aucune colonne (features)")
+        validation_passed = False
+    
+    # 2. Vérifier que y n'est pas vide
+    if len(y) == 0:
+        errors.append("❌ La variable cible y est vide")
+        validation_passed = False
+    
+    # 3. Vérifier que X et y ont la même longueur
+    if len(X) != len(y):
+        errors.append(f"❌ Incompatibilité de taille : X a {len(X)} lignes mais y a {len(y)} valeurs")
+        validation_passed = False
+    
+    # 4. Vérifier les NaN dans X
+    nan_cols = X.columns[X.isna().any()].tolist()
+    if nan_cols:
+        nan_count = len(nan_cols)
+        if nan_count <= 5:
+            warnings.append(f"⚠️ {nan_count} colonne(s) avec valeurs manquantes : {', '.join(nan_cols)}")
+        else:
+            warnings.append(f"⚠️ {nan_count} colonnes avec valeurs manquantes (dont {', '.join(nan_cols[:3])}...)")
+    
+    # 5. Vérifier les colonnes catégorielles avec trop de modalités
+    cat_cols = X.select_dtypes(include=['object', 'category']).columns
+    high_cardinality_cols = []
+    for col in cat_cols:
+        n_unique = X[col].nunique()
+        if n_unique > 100:
+            high_cardinality_cols.append(f"{col} ({n_unique} valeurs)")
+    
+    if high_cardinality_cols:
+        if len(high_cardinality_cols) <= 3:
+            warnings.append(f"⚠️ Colonnes à haute cardinalité : {', '.join(high_cardinality_cols)}")
+        else:
+            warnings.append(f"⚠️ {len(high_cardinality_cols)} colonnes à haute cardinalité (peut ralentir l'entraînement)")
+    
+    # 6. Vérifier les valeurs infinies dans X
+    num_cols = X.select_dtypes(include=['int64', 'float64']).columns
+    inf_cols = []
+    for col in num_cols:
+        if ((X[col] == float('inf')) | (X[col] == float('-inf'))).any():
+            inf_cols.append(col)
+    
+    if inf_cols:
+        warnings.append(f"⚠️ Colonnes avec valeurs infinies : {', '.join(inf_cols[:5])}")
+    
+    # 7. Vérifier la taille du dataset
+    total_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
+    if total_size_mb > 500:
+        warnings.append(f"⚠️ Dataset volumineux ({total_size_mb:.1f} MB) - l'entraînement peut être lent")
+    
+    # Afficher les résultats
+    if errors:
+        for error in errors:
+            st.error(error)
+    
+    if warnings:
+        with st.expander("⚠️ Avertissements de validation", expanded=True):
+            for warning in warnings:
+                st.warning(warning)
+            st.info("💡 Ces avertissements n'empêchent pas l'entraînement, mais peuvent affecter les performances")
+    
+    if validation_passed and not errors:
+        st.success(f"✅ Validation réussie : {X.shape[0]} lignes × {X.shape[1]} features")
+    
+    return validation_passed
+
 def run_modeling(df: pd.DataFrame) -> dict:
     st.subheader("⚡ Modélisation interactive")
     
@@ -93,6 +177,12 @@ def run_modeling(df: pd.DataFrame) -> dict:
     
     # Validation et nettoyage de la variable cible
     st.markdown("### 🔍 Validation des Données")
+    
+    # Validation complète des données AVANT tout traitement
+    if not _validate_data_for_modeling(X, y):
+        st.error("❌ Les données ne sont pas valides pour la modélisation")
+        st.info("💡 Corrigez les erreurs ci-dessus avant de continuer")
+        st.stop()
     
     # Vérifier les valeurs manquantes dans y
     y_missing = y.isna().sum()
@@ -429,10 +519,40 @@ def run_modeling(df: pd.DataFrame) -> dict:
 
         pipe = Pipeline([("preprocessor", preprocessor), ("model", model)])
 
-        # Split & train
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-        pipe.fit(X_train, y_train)
-        preds = pipe.predict(X_test)
+        # Split & train avec gestion d'erreurs robuste
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+            
+            with st.spinner("🔄 Entraînement du modèle en cours..."):
+                pipe.fit(X_train, y_train)
+                preds = pipe.predict(X_test)
+                
+        except ValueError as e:
+            st.error(f"❌ **Erreur de données** : {str(e)}")
+            st.info("💡 **Suggestions** :")
+            st.markdown("""
+            - Vérifiez que vos données sont compatibles avec le modèle sélectionné
+            - Assurez-vous qu'il n'y a pas de valeurs infinies ou NaN dans les features
+            - Essayez de réduire le nombre de colonnes catégorielles avec trop de modalités
+            """)
+            st.stop()
+            
+        except MemoryError:
+            st.error("❌ **Mémoire insuffisante** pour entraîner ce modèle")
+            st.info("💡 **Suggestions** :")
+            st.markdown("""
+            - Réduisez la taille de votre dataset (échantillonnage)
+            - Choisissez un modèle plus simple (ex: Logistic Regression au lieu de Random Forest)
+            - Réduisez le nombre de features
+            """)
+            st.stop()
+            
+        except Exception as e:
+            st.error(f"❌ **Erreur inattendue lors de l'entraînement** : {str(e)}")
+            with st.expander("🐛 Voir les détails techniques"):
+                st.exception(e)
+            st.info("💡 Essayez de recharger vos données ou de choisir un autre modèle")
+            st.stop()
 
         # Évaluation (metrics utilitaires)
         if task == "classification":
@@ -444,15 +564,35 @@ def run_modeling(df: pd.DataFrame) -> dict:
         st.write("📊 **Metrics (test)** :")
         st.json(metrics_display)
 
-        # Sauvegarde modèle et datasets
-        helpers.ensure_dir("outputs/models")
-        model_path = f"outputs/models/model_{target}.pkl"
-        joblib.dump(pipe, model_path)
-        st.success(f"✅ Modèle entraîné et sauvegardé : {model_path}")
-
-        helpers.ensure_dir("outputs/data")
-        X_train.assign(**{target: y_train}).to_csv(f"outputs/data/train_{target}.csv", index=False)
-        X_test.assign(**{target: y_test}).to_csv(f"outputs/data/test_{target}.csv", index=False)
+        # Sauvegarde modèle et datasets avec gestion d'erreurs
+        # Nettoyer le nom de la cible pour éviter les caractères spéciaux
+        safe_target = target.replace("/", "_").replace("\\", "_").replace(" ", "_").replace(":", "_")
+        
+        # Sauvegarde du modèle
+        try:
+            helpers.ensure_dir("outputs/models")
+            model_path = f"outputs/models/model_{safe_target}.pkl"
+            joblib.dump(pipe, model_path)
+            st.success(f"✅ Modèle sauvegardé : {model_path}")
+        except PermissionError:
+            st.warning("⚠️ Impossible de sauvegarder le modèle : permissions insuffisantes")
+            st.info("💡 Le modèle reste disponible dans la session en cours")
+        except Exception as e:
+            st.warning(f"⚠️ Impossible de sauvegarder le modèle : {str(e)}")
+            st.info("💡 Le modèle reste disponible dans la session en cours")
+        
+        # Sauvegarde des datasets
+        try:
+            helpers.ensure_dir("outputs/data")
+            X_train.assign(**{target: y_train}).to_csv(f"outputs/data/train_{safe_target}.csv", index=False)
+            X_test.assign(**{target: y_test}).to_csv(f"outputs/data/test_{safe_target}.csv", index=False)
+            st.success(f"✅ Datasets sauvegardés dans outputs/data/")
+        except PermissionError:
+            st.warning("⚠️ Impossible de sauvegarder les datasets : permissions insuffisantes")
+        except Exception as e:
+            st.warning(f"⚠️ Impossible de sauvegarder les datasets : {str(e)}")
+        
+        st.success("✅ Modèle entraîné avec succès !")
 
         # Stocker dans session_state pour reporting/evaluation
         st.session_state.update({
