@@ -334,35 +334,49 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         else:
             dictionnaire = pd.read_excel(uploaded_dict)
         
-        # Valider le format du dictionnaire
-        colonnes_requises = ['Colonne', 'Type', 'Obligatoire', 'Valeurs_Autorisées', 'Min', 'Max', 'Format', 'Action_Si_Anomalie']
-        colonnes_manquantes = [col for col in colonnes_requises if col not in dictionnaire.columns]
+        st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
         
-        if colonnes_manquantes:
-            st.error(f"❌ Le dictionnaire ne contient pas les colonnes requises : {', '.join(colonnes_manquantes)}")
+        # Étape 1.1 : Validation stricte du dictionnaire
+        st.markdown("#### 🔍 Validation du dictionnaire")
+        
+        from data_quality import validate_dictionnaire, normalize_dictionnaire
+        
+        errors = validate_dictionnaire(dictionnaire)
+        
+        if errors:
+            st.error(f"❌ Le dictionnaire contient {len(errors)} erreur(s) :")
+            for error in errors:
+                st.error(error)
+            
             st.warning("**Colonnes actuelles dans votre fichier :**")
             st.write(list(dictionnaire.columns))
+            
             st.info("""
-            **Format attendu :**
-            - `Colonne` : Nom de la colonne
-            - `Type` : numerique, categorique, texte, date
-            - `Obligatoire` : oui/non
-            - `Valeurs_Autorisées` : Liste séparée par virgules
-            - `Min` : Valeur minimale
-            - `Max` : Valeur maximale
-            - `Format` : Format attendu
-            - `Action_Si_Anomalie` : imputer_moyenne, imputer_mediane, imputer_mode, supprimer_ligne, mettre_vide, ignorer
+            **📖 Consultez la documentation pour plus de détails :**
+            - Format attendu pour chaque colonne
+            - Exemples de valeurs valides
+            - Règles de validation
+            
+            Voir : `DOCUMENTATION_DICTIONNAIRE_DETAILLEE.md`
             """)
             return
+        else:
+            st.success("✅ Dictionnaire valide !")
         
-        st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
+        # Étape 1.2 : Normalisation automatique
+        st.markdown("#### 🔧 Normalisation automatique")
+        
+        dictionnaire = normalize_dictionnaire(dictionnaire)
+        st.success("✅ Dictionnaire normalisé (majuscules/minuscules, virgules/points, espaces)")
 
         # Aperçu complet du dictionnaire (sans expander)
-        st.markdown("#### 👁️ Aperçu complet du dictionnaire")
+        st.markdown("#### 👁️ Aperçu du dictionnaire normalisé")
         st.dataframe(dictionnaire, use_container_width=True)
     
     except Exception as e:
         st.error(f"❌ Erreur lors du chargement du dictionnaire : {e}")
+        import traceback
+        st.code(traceback.format_exc())
         return
     
     # Étape 1.5 : Pré-validation et nettoyage des données

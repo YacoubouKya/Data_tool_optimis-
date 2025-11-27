@@ -10,6 +10,189 @@ import re
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+
+# ------------------------
+# Fonctions de Validation et Normalisation du Dictionnaire
+# ------------------------
+
+def validate_dictionnaire(dictionnaire: pd.DataFrame) -> List[str]:
+    """
+    Valide le format et le contenu du dictionnaire de données
+    
+    Args:
+        dictionnaire: DataFrame du dictionnaire à valider
+        
+    Returns:
+        Liste des erreurs détectées (vide si tout est OK)
+    """
+    errors = []
+    
+    # 1. Vérifier les colonnes requises
+    colonnes_requises = ['Colonne', 'Type', 'Obligatoire', 'Valeurs_Autorisées', 
+                         'Min', 'Max', 'Format', 'Action_Si_Anomalie']
+    colonnes_manquantes = [col for col in colonnes_requises if col not in dictionnaire.columns]
+    if colonnes_manquantes:
+        errors.append(f"❌ Colonnes manquantes dans le dictionnaire : {', '.join(colonnes_manquantes)}")
+        return errors  # Arrêt si colonnes manquantes
+    
+    # 2. Vérifier que la colonne 'Colonne' n'est pas vide
+    if dictionnaire['Colonne'].isna().any():
+        nb_vides = dictionnaire['Colonne'].isna().sum()
+        errors.append(f"❌ {nb_vides} ligne(s) ont une colonne 'Colonne' vide")
+    
+    # 3. Vérifier les valeurs de Type
+    types_valides = ['numerique', 'categorique', 'texte', 'date']
+    for idx, row in dictionnaire.iterrows():
+        if pd.notna(row['Type']):
+            type_val = str(row['Type']).lower().strip()
+            if type_val not in types_valides:
+                errors.append(
+                    f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                    f"Type '{row['Type']}' invalide. "
+                    f"Valeurs acceptées : {', '.join(types_valides)}"
+                )
+        else:
+            errors.append(f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : Type manquant")
+    
+    # 4. Vérifier les valeurs de Obligatoire
+    obligatoire_valides = ['oui', 'non', 'yes', 'no', '1', '0', 'true', 'false']
+    for idx, row in dictionnaire.iterrows():
+        if pd.notna(row['Obligatoire']):
+            oblig_val = str(row['Obligatoire']).lower().strip()
+            if oblig_val not in obligatoire_valides:
+                errors.append(
+                    f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                    f"Obligatoire '{row['Obligatoire']}' invalide. "
+                    f"Valeurs acceptées : oui/non (ou yes/no, 1/0, true/false)"
+                )
+        else:
+            errors.append(f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : Obligatoire manquant")
+    
+    # 5. Vérifier les valeurs de Action_Si_Anomalie
+    actions_valides = ['imputer_moyenne', 'imputer_mediane', 'imputer_mode', 
+                       'mettre_vide', 'supprimer_ligne', 'ignorer']
+    for idx, row in dictionnaire.iterrows():
+        if pd.notna(row['Action_Si_Anomalie']):
+            action_val = str(row['Action_Si_Anomalie']).lower().strip()
+            if action_val not in actions_valides:
+                errors.append(
+                    f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                    f"Action '{row['Action_Si_Anomalie']}' invalide. "
+                    f"Valeurs acceptées : {', '.join(actions_valides)}"
+                )
+        else:
+            errors.append(f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : Action_Si_Anomalie manquant")
+    
+    # 6. Vérifier Min/Max pour colonnes numériques
+    for idx, row in dictionnaire.iterrows():
+        if pd.notna(row['Type']) and str(row['Type']).lower().strip() == 'numerique':
+            # Vérifier Min
+            if pd.notna(row['Min']):
+                try:
+                    # Remplacer virgule par point avant conversion
+                    min_str = str(row['Min']).replace(',', '.')
+                    float(min_str)
+                except ValueError:
+                    errors.append(
+                        f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                        f"Min '{row['Min']}' n'est pas un nombre valide"
+                    )
+            
+            # Vérifier Max
+            if pd.notna(row['Max']):
+                try:
+                    max_str = str(row['Max']).replace(',', '.')
+                    float(max_str)
+                except ValueError:
+                    errors.append(
+                        f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                        f"Max '{row['Max']}' n'est pas un nombre valide"
+                    )
+            
+            # Vérifier que Min < Max
+            if pd.notna(row['Min']) and pd.notna(row['Max']):
+                try:
+                    min_val = float(str(row['Min']).replace(',', '.'))
+                    max_val = float(str(row['Max']).replace(',', '.'))
+                    if min_val >= max_val:
+                        errors.append(
+                            f"❌ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                            f"Min ({min_val}) doit être < Max ({max_val})"
+                        )
+                except ValueError:
+                    pass  # Déjà signalé ci-dessus
+    
+    # 7. Vérifier le format des Valeurs_Autorisées pour colonnes catégoriques
+    for idx, row in dictionnaire.iterrows():
+        if pd.notna(row['Type']) and str(row['Type']).lower().strip() == 'categorique':
+            if pd.notna(row['Valeurs_Autorisées']):
+                valeurs = str(row['Valeurs_Autorisées']).strip()
+                if ',' not in valeurs and len(valeurs) > 0:
+                    errors.append(
+                        f"⚠️ Ligne {idx+2}, Colonne '{row['Colonne']}' : "
+                        f"Valeurs_Autorisées '{valeurs}' ne contient qu'une seule valeur. "
+                        f"Séparez les valeurs par des virgules (ex: Actif,Inactif,En attente)"
+                    )
+    
+    return errors
+
+
+def normalize_dictionnaire(dictionnaire: pd.DataFrame) -> pd.DataFrame:
+    """
+    Normalise les valeurs du dictionnaire pour éviter les erreurs de saisie
+    
+    Args:
+        dictionnaire: DataFrame du dictionnaire à normaliser
+        
+    Returns:
+        DataFrame normalisé
+    """
+    dict_norm = dictionnaire.copy()
+    
+    # 1. Normaliser Type (minuscules, sans espaces)
+    dict_norm['Type'] = dict_norm['Type'].apply(
+        lambda x: str(x).lower().strip() if pd.notna(x) else x
+    )
+    
+    # 2. Normaliser Obligatoire (accepter yes/1/true → oui, no/0/false → non)
+    def normalize_obligatoire(val):
+        if pd.isna(val):
+            return val
+        val_lower = str(val).lower().strip()
+        if val_lower in ['oui', 'yes', '1', 'true', 'o', 'y']:
+            return 'oui'
+        elif val_lower in ['non', 'no', '0', 'false', 'n']:
+            return 'non'
+        else:
+            return val  # Garder la valeur originale si non reconnue
+    
+    dict_norm['Obligatoire'] = dict_norm['Obligatoire'].apply(normalize_obligatoire)
+    
+    # 3. Normaliser Action_Si_Anomalie (minuscules, sans espaces)
+    dict_norm['Action_Si_Anomalie'] = dict_norm['Action_Si_Anomalie'].apply(
+        lambda x: str(x).lower().strip() if pd.notna(x) else x
+    )
+    
+    # 4. Remplacer virgules par points dans Min/Max (pour format français)
+    dict_norm['Min'] = dict_norm['Min'].apply(
+        lambda x: str(x).replace(',', '.') if pd.notna(x) else x
+    )
+    dict_norm['Max'] = dict_norm['Max'].apply(
+        lambda x: str(x).replace(',', '.') if pd.notna(x) else x
+    )
+    
+    # 5. Nettoyer les espaces dans Valeurs_Autorisées
+    dict_norm['Valeurs_Autorisées'] = dict_norm['Valeurs_Autorisées'].apply(
+        lambda x: ','.join([v.strip() for v in str(x).split(',')]) if pd.notna(x) else x
+    )
+    
+    # 6. Normaliser Format (minuscules, sans espaces)
+    dict_norm['Format'] = dict_norm['Format'].apply(
+        lambda x: str(x).strip() if pd.notna(x) else x
+    )
+    
+    return dict_norm
+
 class DataQualityChecker:
     """Classe optimisée pour vérifier la qualité des données selon un dictionnaire"""
     
