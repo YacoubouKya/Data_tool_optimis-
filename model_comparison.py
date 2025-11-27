@@ -497,29 +497,25 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     if dataset_size_mb > 5 or n_rows > 10000:
         st.warning(f"⚠️ Dataset volumineux : {n_rows:,} lignes, {dataset_size_mb:.1f} MB")
         
-        with st.markdown("💡 Recommandations pour éviter les timeouts"):
-            st.markdown("""
-            ### ⚡ Modèles Rapides (5-15s chacun)
-            - Logistic/Linear Regression
-            - Decision Tree
-            - K-Nearest Neighbors
-            
-            ### 🎯 Modèles Performants (30-60s chacun)
-            - Random Forest
-            - Gradient Boosting
-            - AdaBoost, Extra Trees
-            
-            ### 🐌 Modèles Lents (60-120s chacun)
-            - SVM/SVR
-            
-            ### 💡 Conseils
-            - **3-5 modèles rapides** : 1-2 minutes ✅
-            - **2-3 modèles performants** : 1-3 minutes ✅
-            - **Mix (5-7 modèles)** : 2-4 minutes ⚠️
-            - **Tous les modèles (8-10)** : 4-8 minutes ❌ Risque de timeout
-            
-            **Tu peux quand même sélectionner Random Forest !** Limite juste le nombre total de modèles.
-            """)
+        st.markdown("### 💡 Recommandations pour éviter les timeouts")
+        st.markdown("""
+        **⚡ Modèles Rapides (5-15s chacun)**
+        - Logistic/Linear Regression, Decision Tree, K-Nearest Neighbors
+        
+        **🎯 Modèles Performants (30-60s chacun)**
+        - Random Forest, Gradient Boosting, AdaBoost, Extra Trees
+        
+        **🐌 Modèles Lents (60-120s chacun)**
+        - SVM/SVR
+        
+        **💡 Conseils**
+        - **3-5 modèles rapides** : 1-2 minutes ✅
+        - **2-3 modèles performants** : 1-3 minutes ✅
+        - **Mix (5-7 modèles)** : 2-4 minutes ⚠️
+        - **Tous les modèles (8-10)** : 4-8 minutes ❌ Risque de timeout
+        
+        **Tu peux quand même sélectionner Random Forest !** Limite juste le nombre total de modèles.
+        """)
     
     # Initialiser selected_models dans session_state si nécessaire
     if "selected_models" not in st.session_state:

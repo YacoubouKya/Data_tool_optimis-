@@ -137,20 +137,35 @@ def build_preprocessor(X: pd.DataFrame, do_scale: bool = True) -> ColumnTransfor
         if do_scale:
             num_steps.append(("scaler", StandardScaler()))
     
-    # Pipeline pour les colonnes catégorielles
+    # Pipeline pour les colonnes catégorielles avec gestion de la haute cardinalité
     cat_steps = []
     if cat_cols:
-        cat_steps = [
-            ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
-        ]
+        # Filtrer les colonnes à haute cardinalité (> 100 valeurs uniques)
+        low_card_cols = []
+        high_card_cols = []
+        
+        for col in cat_cols:
+            n_unique = X[col].nunique()
+            if n_unique <= 100:
+                low_card_cols.append(col)
+            else:
+                high_card_cols.append(col)
+                import streamlit as st
+                st.warning(f"⚠️ Colonne '{col}' ignorée : {n_unique} valeurs uniques (> 100)")
+        
+        # Utiliser OneHotEncoder seulement pour les colonnes à faible cardinalité
+        if low_card_cols:
+            cat_steps = [
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False, max_categories=100))
+            ]
     
     # Assembler les transformers
     transformers = []
     if num_cols:
         transformers.append(("num", Pipeline(num_steps), num_cols))
-    if cat_cols:
-        transformers.append(("cat", Pipeline(cat_steps), cat_cols))
+    if cat_cols and low_card_cols:
+        transformers.append(("cat", Pipeline(cat_steps), low_card_cols))
     
     return ColumnTransformer(
         transformers=transformers,
