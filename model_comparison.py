@@ -49,33 +49,69 @@ class ModelComparator:
         self.best_model = None
         self.best_score = -np.inf if task == "classification" else np.inf
         
-    def get_available_models(self) -> Dict[str, Any]:
-        """Retourne les modèles disponibles selon la tâche"""
+    def get_available_models(self, fast_mode: bool = False) -> Dict[str, Any]:
+        """
+        Retourne les modèles disponibles selon la tâche
+        
+        Args:
+            fast_mode: Si True, utilise des hyperparamètres optimisés pour la vitesse
+        """
         if self.task == "classification":
-            return {
-                "Random Forest": RandomForestClassifier(random_state=42),
-                "Gradient Boosting": GradientBoostingClassifier(random_state=42),
-                "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
-                "Decision Tree": DecisionTreeClassifier(random_state=42),
-                "AdaBoost": AdaBoostClassifier(random_state=42),
-                "Extra Trees": ExtraTreesClassifier(random_state=42),
-                "K-Nearest Neighbors": KNeighborsClassifier(),
-                "SVM": SVC(probability=True, random_state=42),
-                "Naive Bayes": GaussianNB()
-            }
+            if fast_mode:
+                # Hyperparamètres optimisés pour gros datasets
+                return {
+                    "Random Forest": RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1),
+                    "Gradient Boosting": GradientBoostingClassifier(n_estimators=50, max_depth=3, random_state=42),
+                    "Logistic Regression": LogisticRegression(max_iter=500, random_state=42, n_jobs=-1),
+                    "Decision Tree": DecisionTreeClassifier(max_depth=10, random_state=42),
+                    "AdaBoost": AdaBoostClassifier(n_estimators=30, random_state=42),
+                    "Extra Trees": ExtraTreesClassifier(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1),
+                    "K-Nearest Neighbors": KNeighborsClassifier(n_neighbors=5, n_jobs=-1),
+                    "SVM": SVC(probability=True, random_state=42, max_iter=500),
+                    "Naive Bayes": GaussianNB()
+                }
+            else:
+                # Hyperparamètres par défaut
+                return {
+                    "Random Forest": RandomForestClassifier(random_state=42, n_jobs=-1),
+                    "Gradient Boosting": GradientBoostingClassifier(random_state=42),
+                    "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42, n_jobs=-1),
+                    "Decision Tree": DecisionTreeClassifier(random_state=42),
+                    "AdaBoost": AdaBoostClassifier(random_state=42),
+                    "Extra Trees": ExtraTreesClassifier(random_state=42, n_jobs=-1),
+                    "K-Nearest Neighbors": KNeighborsClassifier(n_jobs=-1),
+                    "SVM": SVC(probability=True, random_state=42),
+                    "Naive Bayes": GaussianNB()
+                }
         else:  # regression
-            return {
-                "Random Forest": RandomForestRegressor(random_state=42),
-                "Gradient Boosting": GradientBoostingRegressor(random_state=42),
-                "Linear Regression": LinearRegression(),
-                "Ridge": Ridge(random_state=42),
-                "Lasso": Lasso(random_state=42),
-                "Decision Tree": DecisionTreeRegressor(random_state=42),
-                "AdaBoost": AdaBoostRegressor(random_state=42),
-                "Extra Trees": ExtraTreesRegressor(random_state=42),
-                "K-Nearest Neighbors": KNeighborsRegressor(),
-                "SVR": SVR()
-            }
+            if fast_mode:
+                # Hyperparamètres optimisés pour gros datasets
+                return {
+                    "Random Forest": RandomForestRegressor(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1),
+                    "Gradient Boosting": GradientBoostingRegressor(n_estimators=50, max_depth=3, random_state=42),
+                    "Linear Regression": LinearRegression(n_jobs=-1),
+                    "Ridge": Ridge(random_state=42),
+                    "Lasso": Lasso(random_state=42, max_iter=500),
+                    "Decision Tree": DecisionTreeRegressor(max_depth=10, random_state=42),
+                    "AdaBoost": AdaBoostRegressor(n_estimators=30, random_state=42),
+                    "Extra Trees": ExtraTreesRegressor(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1),
+                    "K-Nearest Neighbors": KNeighborsRegressor(n_jobs=-1),
+                    "SVR": SVR(max_iter=500)
+                }
+            else:
+                # Hyperparamètres par défaut
+                return {
+                    "Random Forest": RandomForestRegressor(random_state=42, n_jobs=-1),
+                    "Gradient Boosting": GradientBoostingRegressor(random_state=42),
+                    "Linear Regression": LinearRegression(n_jobs=-1),
+                    "Ridge": Ridge(random_state=42),
+                    "Lasso": Lasso(random_state=42),
+                    "Decision Tree": DecisionTreeRegressor(random_state=42),
+                    "AdaBoost": AdaBoostRegressor(random_state=42),
+                    "Extra Trees": ExtraTreesRegressor(random_state=42, n_jobs=-1),
+                    "K-Nearest Neighbors": KNeighborsRegressor(n_jobs=-1),
+                    "SVR": SVR()
+                }
     
     def build_preprocessor(self, X: pd.DataFrame, do_scale: bool = True) -> ColumnTransformer:
         """Construit le preprocesseur pour les données"""
@@ -183,15 +219,19 @@ class ModelComparator:
         y_test: pd.Series,
         do_scale: bool = True,
         use_cv: bool = False,
-        cv_folds: int = 5
+        cv_folds: int = 5,
+        fast_mode: bool = False
     ) -> pd.DataFrame:
         """
         Compare plusieurs modèles
         
+        Args:
+            fast_mode: Si True, utilise des hyperparamètres optimisés pour la vitesse
+        
         Returns:
             DataFrame avec les résultats de comparaison
         """
-        available_models = self.get_available_models()
+        available_models = self.get_available_models(fast_mode=fast_mode)
         preprocessor = self.build_preprocessor(X_train, do_scale)
         
         self.results = []
@@ -414,10 +454,26 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     # Configuration
     st.markdown("### ⚙️ Configuration")
     
+    # Vérifier la taille du dataset pour recommandations
+    dataset_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
+    n_rows = len(X)
+    is_large_dataset = dataset_size_mb > 5 or n_rows > 10000
+    
     col1, col2 = st.columns(2)
     with col1:
         test_size = st.slider("Taille test (%)", 5, 50, 20, key="comp_test_size") / 100.0
         do_scale = st.checkbox("Standardiser les variables numériques", value=True, key="comp_scale")
+        
+        # Mode rapide pour gros datasets
+        if is_large_dataset:
+            fast_mode = st.checkbox(
+                "⚡ Mode rapide (hyperparamètres optimisés)",
+                value=True,
+                key="comp_fast_mode",
+                help="Réduit le nombre d'estimateurs pour Random Forest, Gradient Boosting, etc. (50 au lieu de 100)"
+            )
+        else:
+            fast_mode = False
     
     with col2:
         random_state = int(st.number_input("Seed aléatoire", value=42, key="comp_seed"))
@@ -440,11 +496,30 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     # Recommandation pour gros datasets
     if dataset_size_mb > 5 or n_rows > 10000:
         st.warning(f"⚠️ Dataset volumineux : {n_rows:,} lignes, {dataset_size_mb:.1f} MB")
-        st.info("💡 **Recommandation** : Sélectionnez 3-5 modèles rapides pour éviter les timeouts (2-3 minutes)")
-        st.markdown("""
-        **Modèles rapides** : Logistic/Linear Regression, Decision Tree, K-Nearest Neighbors  
-        **Modèles lents** : Random Forest, Gradient Boosting, SVM (peuvent prendre 30-60s chacun)
-        """)
+        
+        with st.expander("💡 Recommandations pour éviter les timeouts", expanded=False):
+            st.markdown("""
+            ### ⚡ Modèles Rapides (5-15s chacun)
+            - Logistic/Linear Regression
+            - Decision Tree
+            - K-Nearest Neighbors
+            
+            ### 🎯 Modèles Performants (30-60s chacun)
+            - Random Forest
+            - Gradient Boosting
+            - AdaBoost, Extra Trees
+            
+            ### 🐌 Modèles Lents (60-120s chacun)
+            - SVM/SVR
+            
+            ### 💡 Conseils
+            - **3-5 modèles rapides** : 1-2 minutes ✅
+            - **2-3 modèles performants** : 1-3 minutes ✅
+            - **Mix (5-7 modèles)** : 2-4 minutes ⚠️
+            - **Tous les modèles (8-10)** : 4-8 minutes ❌ Risque de timeout
+            
+            **Tu peux quand même sélectionner Random Forest !** Limite juste le nombre total de modèles.
+            """)
     
     # Initialiser selected_models dans session_state si nécessaire
     if "selected_models" not in st.session_state:
@@ -495,13 +570,18 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                 X, y, test_size=test_size, random_state=random_state
             )
             
+            # Afficher le mode utilisé
+            if is_large_dataset and fast_mode:
+                st.info("⚡ Mode rapide activé : Random Forest (50 estimateurs), Gradient Boosting (50 estimateurs)")
+            
             # Comparaison
             results_df = comparator.compare_models(
                 selected_models,
                 X_train, X_test, y_train, y_test,
                 do_scale=do_scale,
                 use_cv=use_cv,
-                cv_folds=cv_folds
+                cv_folds=cv_folds,
+                fast_mode=fast_mode
             )
             
             # Affichage des résultats
