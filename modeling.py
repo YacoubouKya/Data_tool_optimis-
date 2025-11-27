@@ -111,10 +111,10 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
             st.error(error)
     
     if warnings:
-        with st.expander("⚠️ Avertissements de validation", expanded=True):
-            for warning in warnings:
-                st.warning(warning)
-            st.info("💡 Ces avertissements n'empêchent pas l'entraînement, mais peuvent affecter les performances")
+        st.markdown("**⚠️ Avertissements de validation**")
+        for warning in warnings:
+            st.warning(warning)
+        st.info("💡 Ces avertissements n'empêchent pas l'entraînement, mais peuvent affecter les performances")
     
     if validation_passed and not errors:
         st.success(f"✅ Validation réussie : {X.shape[0]} lignes × {X.shape[1]} features")
