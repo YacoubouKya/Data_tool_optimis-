@@ -175,10 +175,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
     X = df.drop(columns=[target])
     y = df[target]
     
-    # Validation et nettoyage de la variable cible
-    st.markdown("### 🔍 Validation des Données")
-    
-    # Validation complète des données AVANT tout traitement
+    # Validation complète des données (silencieuse si pas d'erreurs)
     if not _validate_data_for_modeling(X, y):
         st.error("❌ Les données ne sont pas valides pour la modélisation")
         st.info("💡 Corrigez les erreurs ci-dessus avant de continuer")

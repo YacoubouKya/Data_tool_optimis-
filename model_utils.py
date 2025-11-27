@@ -14,18 +14,20 @@ from sklearn.pipeline import Pipeline
 from typing import Tuple, Optional, Any
 
 
-def validate_and_clean_target(y: pd.Series, target_name: str) -> Tuple[pd.Series, pd.DataFrame]:
+def validate_and_clean_target(y: pd.Series, target_name: str, silent: bool = False) -> Tuple[pd.Series, pd.DataFrame]:
     """
     Valide et nettoie la variable cible
     
     Args:
         y: Série pandas de la variable cible
         target_name: Nom de la variable cible
+        silent: Si True, n'affiche pas le titre "Validation des Données"
         
     Returns:
         Tuple (y_cleaned, indices_to_keep)
     """
-    st.markdown("### 🔍 Validation des Données")
+    if not silent:
+        st.markdown("### 🔍 Validation des Données")
     
     # Vérifier les valeurs manquantes
     y_missing = y.isna().sum()

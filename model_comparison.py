@@ -439,8 +439,8 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     X = df.drop(columns=[target])
     y = df[target]
     
-    # Validation de la cible avec model_utils
-    y, valid_idx = model_utils.validate_and_clean_target(y, target)
+    # Validation de la cible avec model_utils (mode silencieux)
+    y, valid_idx = model_utils.validate_and_clean_target(y, target, silent=True)
     if not valid_idx.all():
         X = X[valid_idx].reset_index(drop=True)
     
