@@ -431,7 +431,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
         st.info("Ce modèle n'a pas d'hyperparamètres à configurer.")
 
     if st.button("🚀 Lancer l'entraînement"):
-        # Préprocessing pipeline (construit sans boucle coûteuse)
+        # Préprocessing pipeline avec filtrage des colonnes à haute cardinalité
         num_cols = X.select_dtypes(include="number").columns.tolist()
         cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
         if cat_cols:
@@ -443,15 +443,28 @@ def run_modeling(df: pd.DataFrame) -> dict:
             if do_scale:
                 num_steps.append(("scaler", StandardScaler()))
 
+        # Filtrer les colonnes catégorielles à haute cardinalité (> 100 valeurs)
         cat_steps = []
+        low_card_cols = []
         if cat_cols:
-            cat_steps = [("imputer", SimpleImputer(strategy="most_frequent")), ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]
+            for col in cat_cols:
+                n_unique = X[col].nunique()
+                if n_unique <= 100:
+                    low_card_cols.append(col)
+                else:
+                    st.warning(f"⚠️ Colonne '{col}' ignorée : {n_unique} valeurs uniques (> 100)")
+            
+            if low_card_cols:
+                cat_steps = [
+                    ("imputer", SimpleImputer(strategy="most_frequent")),
+                    ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False, max_categories=100))
+                ]
 
         transformers = []
         if num_cols:
             transformers.append(("num", Pipeline(num_steps), num_cols))
-        if cat_cols:
-            transformers.append(("cat", Pipeline(cat_steps), cat_cols))
+        if low_card_cols:
+            transformers.append(("cat", Pipeline(cat_steps), low_card_cols))
 
         preprocessor = ColumnTransformer(transformers=transformers, remainder="drop", verbose_feature_names_out=False)
 
