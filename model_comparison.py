@@ -450,7 +450,8 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     # Afficher les infos de manière compacte
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("📊 Tâche", task.upper())
+        # Capitalize pour un affichage élégant et compact
+        st.metric("📊 Tâche", task.capitalize())
     with col2:
         st.metric("📏 Lignes", f"{len(y):,}")
     with col3:
