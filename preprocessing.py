@@ -87,11 +87,13 @@ def detect_and_propose_corrections(profile_report, df: pd.DataFrame):
 # ------------------------
 # Application correction avec suivi (optimisée)
 # ------------------------
-def apply_corrections_with_log(df: pd.DataFrame, corrections_dict: dict):
+def apply_corrections_with_log(df: pd.DataFrame, corrections_dict: dict) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     corrections_dict e.g. {'col1': 'Imputer (moyenne)', 'DOUBLONS': 'Supprimer doublons purs'}
     Retourne : df corrigé, log_df
     """
+    # Créer une copie explicite pour éviter SettingWithCopyWarning
+    df = df.copy()
     log = []
 
     # Regrouper colonnes par type de correction pour appliquer vectorisé quand possible
@@ -130,7 +132,7 @@ def apply_corrections_with_log(df: pd.DataFrame, corrections_dict: dict):
         for c in cat_cols:
             mode_val = df[c].mode()[0] if not df[c].mode().empty else None
             before_missing = df[c].isna().sum()
-            df[c] = df[c].fillna(mode_val)
+            df.loc[:, c] = df[c].fillna(mode_val)
             modified = int(before_missing - df[c].isna().sum())
             log.append({"colonne": c, "correction_appliquee": "Imputer (moyenne) (fallback mode)", "nb_valeurs_modifiees": modified})
 
@@ -150,7 +152,7 @@ def apply_corrections_with_log(df: pd.DataFrame, corrections_dict: dict):
         for c in cat_cols:
             mode_val = df[c].mode()[0] if not df[c].mode().empty else None
             before_missing = df[c].isna().sum()
-            df[c] = df[c].fillna(mode_val)
+            df.loc[:, c] = df[c].fillna(mode_val)
             log.append({"colonne": c, "correction_appliquee": "Imputer (médiane) (fallback mode)", "nb_valeurs_modifiees": int(before_missing - df[c].isna().sum())})
 
     # Imputer mode
@@ -159,7 +161,7 @@ def apply_corrections_with_log(df: pd.DataFrame, corrections_dict: dict):
         for c in cols:
             before_missing = df[c].isna().sum()
             mode_val = df[c].mode()[0] if not df[c].mode().empty else None
-            df[c] = df[c].fillna(mode_val)
+            df.loc[:, c] = df[c].fillna(mode_val)
             log.append({"colonne": c, "correction_appliquee": "Imputer (mode)", "nb_valeurs_modifiees": int(before_missing - df[c].isna().sum())})
 
     # Supprimer lignes (per-column)
