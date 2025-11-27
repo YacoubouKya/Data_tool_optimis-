@@ -14,8 +14,36 @@ def generate_profile(df: pd.DataFrame):
     Génère un rapport de profiling avec ydata-profiling (avec cache).
     Nécessite Python 3.11 (configuré via runtime.txt).
     Le cache évite de recalculer le profiling si les données n'ont pas changé.
+    
+    Optimisé pour les gros datasets :
+    - Échantillonnage si >10000 lignes
+    - Profiling minimal pour éviter les timeouts
     """
-    profile = ProfileReport(df, title="Profiling EDA", minimal=True)
+    # Calculer la taille du dataset
+    dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+    n_rows = len(df)
+    
+    # Échantillonnage intelligent pour les gros datasets
+    if n_rows > 10000 or dataset_size_mb > 5:
+        st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
+        st.info("💡 Échantillonnage de 10,000 lignes pour accélérer le profiling")
+        df_sample = df.sample(n=min(10000, n_rows), random_state=42)
+        
+        # Profiling ultra-minimal pour gros datasets
+        profile = ProfileReport(
+            df_sample,
+            title="Profiling EDA (Échantillon)",
+            minimal=True,
+            explorative=False,
+            correlations=None,
+            missing_diagrams=None,
+            interactions=None,
+            samples=None
+        )
+    else:
+        # Profiling minimal pour petits datasets
+        profile = ProfileReport(df, title="Profiling EDA", minimal=True)
+    
     return profile
 
 def run_eda(df: pd.DataFrame):
