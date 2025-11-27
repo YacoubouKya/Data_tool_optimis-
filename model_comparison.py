@@ -497,7 +497,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     if dataset_size_mb > 5 or n_rows > 10000:
         st.warning(f"⚠️ Dataset volumineux : {n_rows:,} lignes, {dataset_size_mb:.1f} MB")
         
-        with st.expander("💡 Recommandations pour éviter les timeouts", expanded=False):
+        with st.markdown("💡 Recommandations pour éviter les timeouts"):
             st.markdown("""
             ### ⚡ Modèles Rapides (5-15s chacun)
             - Logistic/Linear Regression
