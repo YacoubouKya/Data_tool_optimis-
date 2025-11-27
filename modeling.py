@@ -222,31 +222,38 @@ def run_modeling(df: pd.DataFrame) -> dict:
             y = y.fillna(y.median())
             st.success(f"✅ Valeurs infinies remplacées par la médiane")
     
-    # Afficher statistiques de la cible
-    col1, col2, col3 = st.columns(3)
+    # Détection automatique de la tâche
+    if y.dtype == "O" or (y.nunique() <= 20 and y.nunique()/len(y) < 0.1):
+        task = "classification"
+    else:
+        task = "regression"
+    
+    # Afficher les infos de manière compacte
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Lignes valides", len(y))
+        st.metric("📊 Tâche", task.upper())
     with col2:
-        st.metric("Valeurs uniques", y.nunique())
+        st.metric("📏 Lignes", f"{len(y):,}")
     with col3:
+        st.metric("🎯 Uniques", y.nunique())
+    with col4:
         if y.dtype in ['int64', 'float64']:
-            st.metric("Moyenne", f"{y.mean():.2f}")
+            st.metric("📈 Moyenne", f"{y.mean():.2f}")
         else:
-            st.metric("Mode", y.mode()[0] if not y.mode().empty else "N/A")
+            st.metric("📌 Mode", str(y.mode()[0])[:10] if not y.mode().empty else "N/A")
     
     st.markdown("---")
-
-    task = st.selectbox("Type de tâche", ["auto", "classification", "regression"], index=0)
-    if task == "auto":
-        if y.dtype == "O" or (y.nunique() <= 20 and y.nunique()/len(y) < 0.1):
-            task = "classification"
-        else:
-            task = "regression"
-    st.write("👉 Tâche détectée :", task)
-
-    test_size = st.slider("Taille test (%)", 5, 50, 20) / 100.0
-    random_state = int(st.number_input("Seed aléatoire", value=42))
-
+    
+    # Configuration compacte
+    st.markdown("### ⚙️ Configuration")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        test_size = st.slider("Taille test (%)", 5, 50, 20) / 100.0
+    with col2:
+        random_state = int(st.number_input("Seed", value=42))
+    with col3:
+        do_scale = st.checkbox("Standardiser", value=True)
+    
     # Définir tous les modèles disponibles
     st.markdown("### 🎯 Sélection du Modèle")
     
@@ -307,8 +314,6 @@ def run_modeling(df: pd.DataFrame) -> dict:
     
     st.info(f"💡 Modèle sélectionné : **{model_display_choice}**")
     
-    do_scale = st.checkbox("⚙️ Standardiser les numériques", value=True)
-
     # Hyperparamètres par défaut
     default_params = {
         'rf_n_estimators': 100, 'rf_max_depth': 0,

@@ -446,12 +446,23 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     
     # Détection automatique de la tâche avec model_utils
     task = model_utils.detect_task_type(y)
-    st.info(f"📊 Tâche détectée : **{task.upper()}**")
     
-    # Afficher les statistiques avec model_utils
-    model_utils.display_target_stats(y, task)
+    # Afficher les infos de manière compacte
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("📊 Tâche", task.upper())
+    with col2:
+        st.metric("📏 Lignes", f"{len(y):,}")
+    with col3:
+        st.metric("🎯 Valeurs uniques", y.nunique())
     
-    # Configuration
+    # Toggle pour voir les statistiques détaillées
+    if st.toggle("📈 Voir statistiques détaillées", key="show_stats"):
+        model_utils.display_target_stats(y, task)
+    
+    st.markdown("---")
+    
+    # Configuration compacte
     st.markdown("### ⚙️ Configuration")
     
     # Vérifier la taille du dataset pour recommandations
@@ -459,29 +470,26 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     n_rows = len(X)
     is_large_dataset = dataset_size_mb > 5 or n_rows > 10000
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         test_size = st.slider("Taille test (%)", 5, 50, 20, key="comp_test_size") / 100.0
-        do_scale = st.checkbox("Standardiser les variables numériques", value=True, key="comp_scale")
+        do_scale = st.checkbox("Standardiser", value=True, key="comp_scale")
+    
+    with col2:
+        random_state = int(st.number_input("Seed", value=42, key="comp_seed"))
+        use_cv = st.checkbox("Validation croisée", value=False, key="comp_cv")
+    
+    with col3:
+        if use_cv:
+            cv_folds = int(st.number_input("Folds", 3, 10, 5, key="comp_cv_folds"))
+        else:
+            cv_folds = 5
         
         # Mode rapide pour gros datasets
         if is_large_dataset:
-            fast_mode = st.checkbox(
-                "⚡ Mode rapide (hyperparamètres optimisés)",
-                value=True,
-                key="comp_fast_mode",
-                help="Réduit le nombre d'estimateurs pour Random Forest, Gradient Boosting, etc. (50 au lieu de 100)"
-            )
+            fast_mode = st.checkbox("⚡ Mode rapide", value=True, key="comp_fast_mode")
         else:
             fast_mode = False
-    
-    with col2:
-        random_state = int(st.number_input("Seed aléatoire", value=42, key="comp_seed"))
-        use_cv = st.checkbox("Utiliser la validation croisée", value=False, key="comp_cv")
-        if use_cv:
-            cv_folds = int(st.number_input("Nombre de folds", 3, 10, 5, key="comp_cv_folds"))
-        else:
-            cv_folds = 5
     
     # Sélection des modèles
     st.markdown("### 🎯 Sélection des Modèles")
@@ -493,29 +501,22 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     dataset_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
     n_rows = len(X)
     
-    # Recommandation pour gros datasets
+    # Recommandation compacte pour gros datasets
     if dataset_size_mb > 5 or n_rows > 10000:
-        st.warning(f"⚠️ Dataset volumineux : {n_rows:,} lignes, {dataset_size_mb:.1f} MB")
+        st.info(f"💡 Dataset volumineux ({n_rows:,} lignes, {dataset_size_mb:.1f} MB) - Sélectionnez 3-5 modèles pour éviter les timeouts")
         
-        st.markdown("### 💡 Recommandations pour éviter les timeouts")
-        st.markdown("""
-        **⚡ Modèles Rapides (5-15s chacun)**
-        - Logistic/Linear Regression, Decision Tree, K-Nearest Neighbors
-        
-        **🎯 Modèles Performants (30-60s chacun)**
-        - Random Forest, Gradient Boosting, AdaBoost, Extra Trees
-        
-        **🐌 Modèles Lents (60-120s chacun)**
-        - SVM/SVR
-        
-        **💡 Conseils**
-        - **3-5 modèles rapides** : 1-2 minutes ✅
-        - **2-3 modèles performants** : 1-3 minutes ✅
-        - **Mix (5-7 modèles)** : 2-4 minutes ⚠️
-        - **Tous les modèles (8-10)** : 4-8 minutes ❌ Risque de timeout
-        
-        **Tu peux quand même sélectionner Random Forest !** Limite juste le nombre total de modèles.
-        """)
+        # Toggle pour voir les recommandations détaillées
+        if st.toggle("📋 Voir recommandations détaillées", key="show_recommendations"):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown("**⚡ Rapides (5-15s)**")
+                st.markdown("- Logistic/Linear\n- Decision Tree\n- KNN")
+            with col2:
+                st.markdown("**🎯 Performants (30-60s)**")
+                st.markdown("- Random Forest\n- Gradient Boosting\n- AdaBoost")
+            with col3:
+                st.markdown("**🐌 Lents (60-120s)**")
+                st.markdown("- SVM/SVR")
     
     # Initialiser selected_models dans session_state si nécessaire
     if "selected_models" not in st.session_state:
