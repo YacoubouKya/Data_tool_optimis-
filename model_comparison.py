@@ -197,27 +197,51 @@ class ModelComparator:
         self.results = []
         self.models = {}
         
+        # Vérifier la taille du dataset
+        dataset_size_mb = (X_train.memory_usage(deep=True).sum() + y_train.memory_usage(deep=True)) / 1024 / 1024
+        n_rows = len(X_train)
+        
+        # Avertissement pour gros datasets
+        if dataset_size_mb > 5 or n_rows > 10000:
+            st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
+            st.info(f"💡 Entraînement de {len(selected_models)} modèles - Cela peut prendre 2-5 minutes")
+            
+            # Désactiver la CV automatiquement pour gros datasets
+            if use_cv:
+                st.warning("⚠️ Validation croisée désactivée pour éviter les timeouts sur gros datasets")
+                use_cv = False
+        
         # Barre de progression
         progress_bar = st.progress(0)
         status_text = st.empty()
+        time_text = st.empty()
+        
+        start_total = time.time()
         
         for idx, model_name in enumerate(selected_models):
-            status_text.text(f"Entraînement de {model_name}... ({idx+1}/{len(selected_models)})")
+            status_text.text(f"🔄 Entraînement de {model_name}... ({idx+1}/{len(selected_models)})")
             
+            model_start = time.time()
             model = available_models[model_name]
             result = self.train_and_evaluate(
                 model_name, model,
                 X_train, X_test, y_train, y_test,
                 preprocessor, use_cv, cv_folds
             )
+            model_time = time.time() - model_start
             
             self.results.append(result)
             if result["status"] == "success":
                 self.models[model_name] = result["pipeline"]
+                time_text.text(f"⏱️ {model_name} : {model_time:.1f}s")
+            else:
+                time_text.text(f"❌ {model_name} : Échec")
             
             progress_bar.progress((idx + 1) / len(selected_models))
         
-        status_text.text("✅ Entraînement terminé!")
+        total_time = time.time() - start_total
+        status_text.text(f"✅ Entraînement terminé en {total_time:.1f}s!")
+        time_text.empty()
         progress_bar.empty()
         
         # Créer le DataFrame de résultats
@@ -409,9 +433,26 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     comparator = ModelComparator(task=task)
     available_models = list(comparator.get_available_models().keys())
     
+    # Vérifier la taille du dataset pour recommandations
+    dataset_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
+    n_rows = len(X)
+    
+    # Recommandation pour gros datasets
+    if dataset_size_mb > 5 or n_rows > 10000:
+        st.warning(f"⚠️ Dataset volumineux : {n_rows:,} lignes, {dataset_size_mb:.1f} MB")
+        st.info("💡 **Recommandation** : Sélectionnez 3-5 modèles rapides pour éviter les timeouts (2-3 minutes)")
+        st.markdown("""
+        **Modèles rapides** : Logistic/Linear Regression, Decision Tree, K-Nearest Neighbors  
+        **Modèles lents** : Random Forest, Gradient Boosting, SVM (peuvent prendre 30-60s chacun)
+        """)
+    
     # Initialiser selected_models dans session_state si nécessaire
     if "selected_models" not in st.session_state:
-        st.session_state.selected_models = ["Random Forest", "Gradient Boosting"]
+        # Par défaut : modèles rapides si gros dataset
+        if dataset_size_mb > 5 or n_rows > 10000:
+            st.session_state.selected_models = model_utils.get_fast_models(task)
+        else:
+            st.session_state.selected_models = ["Random Forest", "Gradient Boosting"]
     
     # Options de sélection rapide
     col1, col2, col3 = st.columns(3)
