@@ -444,17 +444,14 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     if not valid_idx.all():
         X = X[valid_idx].reset_index(drop=True)
     
-    # Détection automatique de la tâche avec model_utils
-    task = model_utils.detect_task_type(y)
+    # Sélection du type de tâche avec UI (détection auto + choix utilisateur)
+    task = model_utils.select_task_type_with_ui(y, key_suffix="comparison")
     
     # Afficher les infos de manière compacte
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        # Capitalize pour un affichage élégant et compact
-        st.metric("📊 Tâche", task.capitalize())
-    with col2:
         st.metric("📏 Lignes", f"{len(y):,}")
-    with col3:
+    with col2:
         st.metric("🎯 Valeurs uniques", y.nunique())
     
     # Toggle pour voir les statistiques détaillées

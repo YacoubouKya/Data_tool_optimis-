@@ -90,6 +90,65 @@ def detect_task_type(y: pd.Series, task: str = "auto") -> str:
     return task
 
 
+def select_task_type_with_ui(y: pd.Series, key_suffix: str = "") -> str:
+    """
+    Affiche la détection automatique et permet à l'utilisateur de changer le type de tâche
+    
+    Args:
+        y: Série pandas de la variable cible
+        key_suffix: Suffixe pour la clé du widget (pour éviter les doublons)
+        
+    Returns:
+        Type de tâche choisi par l'utilisateur (ou détecté automatiquement)
+    """
+    # Détection automatique
+    auto_task = detect_task_type(y, "auto")
+    
+    # Afficher la détection avec possibilité de changer
+    st.markdown("#### 🎯 Type de Tâche")
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Déterminer l'index par défaut (0=Classification, 1=Régression)
+        default_index = 0 if auto_task == "classification" else 1
+        
+        task_choice = st.radio(
+            "Sélectionnez le type de modélisation",
+            options=["Classification", "Régression"],
+            index=default_index,
+            key=f"task_type_{key_suffix}",
+            horizontal=True,
+            help="💡 La détection automatique est basée sur le type et la distribution de la variable cible. Vous pouvez changer si nécessaire."
+        )
+    
+    with col2:
+        # Afficher l'indication de détection automatique
+        if task_choice.lower() == auto_task:
+            st.success(f"✅ Auto-détecté")
+        else:
+            st.info(f"🔄 Modifié\n\n(Auto: {auto_task.capitalize()})")
+    
+    # Afficher les critères de détection
+    with st.expander("ℹ️ Comment fonctionne la détection automatique ?"):
+        st.markdown(f"""
+        **Critères de détection :**
+        
+        - **Type de données** : `{y.dtype}`
+        - **Valeurs uniques** : {y.nunique()} sur {len(y)} lignes ({y.nunique()/len(y)*100:.1f}%)
+        
+        **Règles :**
+        - ✅ **Classification** si :
+          - Type texte (object) OU
+          - ≤ 20 valeurs uniques ET < 10% de ratio unique/total
+        - ✅ **Régression** sinon
+        
+        **Détection automatique** : {auto_task.capitalize()}
+        """)
+    
+    return task_choice.lower()
+
+
 def display_target_stats(y: pd.Series, task: str):
     """
     Affiche les statistiques de la variable cible

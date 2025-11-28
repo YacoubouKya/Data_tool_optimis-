@@ -219,22 +219,16 @@ def run_modeling(df: pd.DataFrame) -> dict:
             y = y.fillna(y.median())
             st.success(f"✅ Valeurs infinies remplacées par la médiane")
     
-    # Détection automatique de la tâche
-    if y.dtype == "O" or (y.nunique() <= 20 and y.nunique()/len(y) < 0.1):
-        task = "classification"
-    else:
-        task = "regression"
+    # Sélection du type de tâche avec UI (détection auto + choix utilisateur)
+    task = model_utils.select_task_type_with_ui(y, key_suffix="modeling")
     
     # Afficher les infos de manière compacte
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        # Capitalize pour un affichage élégant et compact
-        st.metric("📊 Tâche", task.capitalize())
-    with col2:
         st.metric("📏 Lignes", f"{len(y):,}")
-    with col3:
+    with col2:
         st.metric("🎯 Uniques", y.nunique())
-    with col4:
+    with col3:
         if y.dtype in ['int64', 'float64']:
             st.metric("📈 Moyenne", f"{y.mean():.2f}")
         else:
