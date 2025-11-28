@@ -385,11 +385,13 @@ def display_model_info(model_name: str, task: str):
     
     if model_name in model_descriptions:
         info = model_descriptions[model_name]
-        with st.expander(f"ℹ️ À propos de {model_name}"):
-            st.markdown(f"**Description** : {info['description']}")
-            st.markdown(f"**✅ Avantages** : {info['pros']}")
-            st.markdown(f"**⚠️ Limitations** : {info['cons']}")
-            st.markdown(f"**🎯 Cas d'usage** : {info['use_case']}")
+        st.markdown("---")
+        st.markdown(f"**ℹ️ À propos de {model_name}**")
+        st.markdown(f"**Description** : {info['description']}")
+        st.markdown(f"**✅ Avantages** : {info['pros']}")
+        st.markdown(f"**⚠️ Limitations** : {info['cons']}")
+        st.markdown(f"**🎯 Cas d'usage** : {info['use_case']}")
+        st.markdown("---")
 
 
 def save_model_to_disk(model: Any, target: str, model_name: str = "model") -> str:

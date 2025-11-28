@@ -58,8 +58,10 @@ def safe_execute(section_name):
                 
                 # Ne pas afficher les erreurs techniques Streamlit à l'utilisateur
                 if "key=" not in error_text.lower() and "widget" not in error_text.lower():
-                    with st.expander("📋 Message d'erreur", expanded=False):
-                        st.code(error_text, language="text")
+                    st.markdown("---")
+                    st.markdown("**📋 Détails de l'erreur :**")
+                    st.code(error_text, language="text")
+                    st.markdown("---")
                 
                 # Suggestions de solutions
                 st.warning("""
@@ -129,12 +131,14 @@ def show_error_dashboard():
     Utile pour les développeurs ou en mode debug
     """
     if "error_log" in st.session_state and st.session_state["error_log"]:
-        with st.expander("🐛 Historique des erreurs (Debug)", expanded=False):
-            st.markdown(f"**Total d'erreurs enregistrées :** {len(st.session_state['error_log'])}")
-            st.markdown("**10 dernières erreurs :**")
-            
-            for i, err in enumerate(reversed(st.session_state["error_log"][-10:]), 1):
-                st.text(f"{i}. [{err['timestamp'].strftime('%H:%M:%S')}] {err['section']}: {err['message'][:100]}")
+        st.markdown("---")
+        st.markdown("### 🐛 Historique des erreurs (Debug)")
+        st.markdown(f"**Total d'erreurs enregistrées :** {len(st.session_state['error_log'])}")
+        st.markdown("**10 dernières erreurs :**")
+        
+        for i, err in enumerate(reversed(st.session_state["error_log"][-10:]), 1):
+            st.text(f"{i}. [{err['timestamp'].strftime('%H:%M:%S')}] {err['section']}: {err['message'][:100]}")
+        st.markdown("---")
 
 
 def safe_file_operation(operation_name):

@@ -311,20 +311,22 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
     
     if uploaded_dict is None:
         st.info("ℹ️ Chargez un dictionnaire de données pour commencer")
-        with st.expander("📖 Format du dictionnaire"):
-            st.markdown("""
-            **Colonnes requises** :
-            - `Colonne` : Nom de la colonne
-            - `Type` : numerique, categorique, texte, date
-            - `Obligatoire` : oui/non
-            - `Valeurs_Autorisées` : Liste séparée par virgules (pour catégoriques)
-            - `Min` : Valeur minimale
-            - `Max` : Valeur maximale
-            - `Format` : Format attendu (email, regex, date format)
-            - `Action_Si_Anomalie` : imputer_moyenne, imputer_mediane, imputer_mode, supprimer_ligne, mettre_vide, ignorer
-            
-            Consultez `TEMPLATE_DICTIONNAIRE.md` pour plus de détails.
-            """)
+        st.markdown("---")
+        st.markdown("**📖 Format du dictionnaire requis :**")
+        st.markdown("""
+        **Colonnes requises** :
+        - `Colonne` : Nom de la colonne
+        - `Type` : numerique, categorique, texte, date
+        - `Obligatoire` : oui/non
+        - `Valeurs_Autorisées` : Liste séparée par virgules (pour catégoriques)
+        - `Min` : Valeur minimale
+        - `Max` : Valeur maximale
+        - `Format` : Format attendu (email, regex, date format)
+        - `Action_Si_Anomalie` : imputer_moyenne, imputer_mediane, imputer_mode, supprimer_ligne, mettre_vide, ignorer
+        
+        Consultez `TEMPLATE_DICTIONNAIRE.md` pour plus de détails.
+        """)
+        st.markdown("---")
         return
     
     # Charger le dictionnaire
@@ -453,9 +455,9 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
                     
                     st.success(f"✅ Nettoyage terminé : {missing_cells} valeurs manquantes traitées")
                     
-                    # Afficher le log
-                    with st.expander("📝 Log du nettoyage"):
-                        st.dataframe(pd.DataFrame(clean_log), use_container_width=True)
+                    # Afficher le log directement
+                    st.markdown("**📝 Log du nettoyage :**")
+                    st.dataframe(pd.DataFrame(clean_log), use_container_width=True)
         
         elif pre_clean == "Oui, choisir les actions":
             st.info("💡 Utilisez l'onglet 'Prétraitement Standard' pour un nettoyage personnalisé, puis revenez ici.")

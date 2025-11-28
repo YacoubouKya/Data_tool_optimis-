@@ -554,13 +554,15 @@ def run_modeling(df: pd.DataFrame) -> dict:
             - Réduisez la taille de votre dataset (échantillonnage)
             - Choisissez un modèle plus simple (ex: Logistic Regression au lieu de Random Forest)
             - Réduisez le nombre de features
-            """)
+            """) # Ajout de la parenthèse fermante ici
             st.stop()
             
         except Exception as e:
             st.error(f"❌ **Erreur inattendue lors de l'entraînement** : {str(e)}")
-            with st.expander("🐛 Voir les détails techniques"):
-                st.exception(e)
+            st.markdown("---")
+            st.markdown("**🐛 Détails techniques :**")
+            st.exception(e)
+            st.markdown("---")
             st.info("💡 Essayez de recharger vos données ou de choisir un autre modèle")
             st.stop()
 
