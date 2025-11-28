@@ -3,6 +3,8 @@ import streamlit as st
 import pandas as pd
 import data_loader, eda, preprocessing, modeling, evaluation, reporting, model_comparison
 from sklearn.model_selection import train_test_split
+from error_handler import safe_execute, initialize_error_handling
+from validators import validate_session_state, validate_dataframe
 
 # ------------------------
 # ⚙️ Configuration de la page
@@ -184,6 +186,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------
+# 🛡️ Initialisation de la gestion d'erreurs
+# ------------------------
+initialize_error_handling()
+
+# ------------------------
 # 🎯 En-tête principal
 # ------------------------
 st.title("📊 Data Project Tool")
@@ -217,6 +224,84 @@ elif section == "🎯 Affinage de Modèle":
 elif section == "📈 Évaluation":
     st.sidebar.info("📊 Analysez votre modèle en détail après comparaison ou affinage")
 
+# Bouton de réinitialisation global
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🔧 Utilitaires")
+if st.sidebar.button("🔄 Réinitialiser l'application", help="Efface toutes les données en mémoire et redémarre l'application"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.sidebar.success("✅ Application réinitialisée")
+    st.rerun()
+
+# ------------------------
+# 🛡️ Fonctions Wrappées pour Gestion d'Erreurs
+# ------------------------
+
+@safe_execute("EDA - Analyse Exploratoire")
+def run_eda_section():
+    """Exécute la section EDA de manière sécurisée"""
+    if validate_session_state(["data"]):
+        eda.run_eda(st.session_state["data"])
+
+@safe_execute("Prétraitement des Données")
+def run_preprocessing_section(df, mode):
+    """Exécute le prétraitement de manière sécurisée"""
+    if mode == "📊 Mode Automatique (Profiling)":
+        profile = eda.generate_profile(df)
+        issues = preprocessing.detect_and_propose_corrections(profile, df)
+        if issues:
+            st.subheader("🚨 Anomalies détectées et corrections proposées")
+            corrections_dict = {}
+            for issue in issues:
+                col = issue["colonne"]
+                anomalies = ", ".join(issue["anomalies"])
+                st.markdown(f"**Colonne : `{col}`**"); st.write(f"Anomalies : {anomalies}")
+                choice = st.selectbox(f"Choisir correction pour `{col}`", ["Ne pas appliquer de correction"] + issue["propositions"], key=f"choice_{col}")
+                corrections_dict[col] = choice
+            if st.button("✅ Appliquer toutes les corrections sélectionnées"):
+                valid_corrections = {col: corr for col, corr in corrections_dict.items() if corr != "Ne pas appliquer de correction"}
+                if valid_corrections:
+                    df_corrige, log_df = preprocessing.apply_corrections_with_log(df, valid_corrections)
+                    st.session_state["clean_data"] = df_corrige
+                    st.session_state["correction_log"] = log_df
+                    st.success("✅ Toutes les corrections appliquées !")
+                    st.subheader("📋 Tableau récapitulatif des corrections")
+                    st.dataframe(log_df)
+                    preprocessing.download_df(df_corrige, label="Télécharger la base corrigée", file_name="base_corrigee", file_format="excel")
+                    preprocessing.download_df(log_df, label="Télécharger le log des corrections", file_name="log_corrections", file_format="excel")
+                else:
+                    st.info("Aucune correction sélectionnée à appliquer.")
+        else:
+            st.info("✅ Aucune anomalie détectée !")
+    else:
+        preprocessing.run_dictionary_based_preprocessing(df)
+
+@safe_execute("Affinage de Modèle")
+def run_modeling_section(df):
+    """Exécute l'affinage de modèle de manière sécurisée"""
+    if validate_dataframe(df, min_rows=10, min_cols=2):
+        modeling.run_modeling(df)
+
+@safe_execute("Comparaison de Modèles")
+def run_comparison_section(df):
+    """Exécute la comparaison de modèles de manière sécurisée"""
+    if validate_dataframe(df, min_rows=10, min_cols=2):
+        model_comparison.run_model_comparison(df)
+
+@safe_execute("Évaluation du Modèle")
+def run_evaluation_section():
+    """Exécute l'évaluation de manière sécurisée"""
+    if validate_session_state(["X_test", "y_test"]):
+        evaluation.run_evaluation(st.session_state["X_test"], st.session_state["y_test"])
+
+@safe_execute("Génération du Rapport")
+def run_reporting_section():
+    """Exécute le reporting de manière sécurisée"""
+    if validate_session_state(["model", "X_test", "y_test"], show_message=False):
+        reporting.generate_report(st.session_state)
+    else:
+        st.warning("⚠️ Entraînez un modèle d'abord pour générer un rapport.")
+
 # ------------------------
 # Sections
 # ------------------------
@@ -238,10 +323,7 @@ if section == "📥 Chargement":
 
 elif section == "🔎 EDA":
     st.header("🔎 Analyse exploratoire (EDA)")
-    if "data" in st.session_state:
-        eda.run_eda(st.session_state["data"])
-    else:
-        st.warning("⚠️ Chargez d'abord les données dans l'onglet Chargement.")
+    run_eda_section()
 
 elif section == "🛠️ Prétraitement":
     st.header("🛠️ Prétraitement")
@@ -258,39 +340,8 @@ elif section == "🛠️ Prétraitement":
         
         st.markdown("---")
         
-        if mode == "📊 Mode Automatique (Profiling)":
-            # Mode classique existant
-            profile = eda.generate_profile(df)
-            issues = preprocessing.detect_and_propose_corrections(profile, df)
-            if issues:
-                st.subheader("🚨 Anomalies détectées et corrections proposées")
-                corrections_dict = {}
-                for issue in issues:
-                    col = issue["colonne"]
-                    anomalies = ", ".join(issue["anomalies"])
-                    st.markdown(f"**Colonne : `{col}`**"); st.write(f"Anomalies : {anomalies}")
-                    choice = st.selectbox(f"Choisir correction pour `{col}`", ["Ne pas appliquer de correction"] + issue["propositions"], key=f"choice_{col}")
-                    corrections_dict[col] = choice
-                if st.button("✅ Appliquer toutes les corrections sélectionnées"):
-                    valid_corrections = {col: corr for col, corr in corrections_dict.items() if corr != "Ne pas appliquer de correction"}
-                    if valid_corrections:
-                        df_corrige, log_df = preprocessing.apply_corrections_with_log(df, valid_corrections)
-                        st.session_state["clean_data"] = df_corrige
-                        st.session_state["correction_log"] = log_df
-                        st.success("✅ Toutes les corrections appliquées !")
-                        st.subheader("📋 Tableau récapitulatif des corrections")
-                        st.dataframe(log_df)
-                        preprocessing.download_df(df_corrige, label="Télécharger la base corrigée", file_name="base_corrigee", file_format="excel")
-                        preprocessing.download_df(log_df, label="Télécharger le log des corrections", file_name="log_corrections", file_format="excel")
-                    else:
-                        st.info("Aucune correction sélectionnée à appliquer.")
-            else:
-                st.info("✅ Aucune anomalie détectée !")
-        
-        else:
-            # Nouveau mode dictionnaire
-            preprocessing.run_dictionary_based_preprocessing(df)
-    
+        # Appel de la fonction wrappée
+        run_preprocessing_section(df, mode)
     else:
         st.warning("⚠️ Chargez d'abord les données.")
 
@@ -309,25 +360,7 @@ elif section == "🎯 Affinage de Modèle":
     
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
     if df_to_use is not None:
-        res = modeling.run_modeling(df_to_use)
-        st.success("✅ Modèle entraîné et jeux train/test créés avec succès !")
-        st.subheader("📌 Pipeline"); st.write(res["pipeline"])
-        st.subheader("📌 Jeux de données")
-        st.write(f"**X_train shape**: {res['X_train'].shape} | **X_test shape**: {res['X_test'].shape}")
-        st.write(f"**y_train shape**: {res['y_train'].shape} | **y_test shape**: {res['y_test'].shape}")
-        st.subheader("📌 Aperçu X_train"); st.dataframe(res["X_train"].head())
-        st.subheader("📌 Aperçu y_train"); st.dataframe(res["y_train"].head())
-        st.session_state.update({
-            "model": res["pipeline"], "X_train": res["X_train"], "X_test": res["X_test"],
-            "y_train": res["y_train"], "y_test": res["y_test"], "task_type": res["task"]
-        })
-        
-        # Bouton pour aller à l'évaluation
-        st.markdown("---")
-        st.markdown("### 🎯 Prochaine Étape")
-        if st.button("📈 Évaluer ce modèle", type="primary"):
-            st.session_state.target_section = "📈 Évaluation"
-            st.rerun()
+        run_modeling_section(df_to_use)
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
@@ -347,7 +380,7 @@ elif section == "🔬 Comparaison de Modèles":
     
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
     if df_to_use is not None:
-        model_comparison.run_model_comparison(df_to_use)
+        run_comparison_section(df_to_use)
         
         # Boutons de navigation après comparaison
         if "comparison_results" in st.session_state and "best_model" in st.session_state:
@@ -383,7 +416,7 @@ elif section == "📈 Évaluation":
     st.header("📈 Évaluation du modèle")
     
     if "model" in st.session_state or "best_model" in st.session_state:
-        evaluation.run_evaluation(st.session_state["X_test"], st.session_state["y_test"])
+        run_evaluation_section()
         
         # Bouton pour le reporting
         st.markdown("---")
@@ -406,4 +439,4 @@ elif section == "📈 Évaluation":
 
 elif section == "📝 Reporting":
     st.header("📝 Reporting")
-    reporting.generate_report(st.session_state)
+    run_reporting_section()
