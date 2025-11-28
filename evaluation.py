@@ -12,38 +12,59 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc, precision_recall_c
 import scipy.stats as stats
 from sklearn.preprocessing import LabelEncoder
 
-def run_evaluation(model, X_test, y_test):
-    st.subheader("📈 Évaluation du modèle")
-    
-    # Récupérer les informations du modèle
-    model_name = st.session_state.get("current_model_name", None)
+def run_evaluation(X_test, y_test):
+    """
+    Interface d'évaluation du modèle avec sélection du modèle à évaluer
+    """
+    # Récupérer les modèles disponibles
+    refined_model = st.session_state.get("model", None)
+    best_model = st.session_state.get("best_model", None)
+    refined_model_name = st.session_state.get("current_model_name", None)
     best_model_name = st.session_state.get("best_model_name", None)
     best_model_score = st.session_state.get("best_model_score", None)
     
-    # Afficher les informations du modèle évalué
-    col1, col2 = st.columns(2)
+    # Déterminer quel modèle évaluer
+    model_to_evaluate = None
+    model_display_name = None
     
-    with col1:
-        if model_name:
-            # Modèle vient de l'affinage
-            st.success(f"🎯 **Modèle évalué**\n{model_name}")
-        elif best_model_name:
-            # Modèle vient de la comparaison
-            st.success(f"🏆 **Meilleur modèle**\n{best_model_name}")
+    # Si les deux modèles sont disponibles, proposer un choix
+    if refined_model is not None and best_model is not None and refined_model_name != best_model_name:
+        st.info("🎯 Vous avez affiné un modèle après la comparaison. Quel modèle souhaitez-vous évaluer ?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(f"🔧 **Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
+                st.session_state["selected_eval_model"] = "refined"
+        with col2:
+            score_text = f" (Score: {best_model_score:.4f})" if best_model_score else ""
+            if st.button(f"🏆 **Meilleur modèle**\n{best_model_name}{score_text}", use_container_width=True):
+                st.session_state["selected_eval_model"] = "best"
+        
+        # Déterminer le modèle sélectionné (par défaut: modèle affiné)
+        selected = st.session_state.get("selected_eval_model", "refined")
+        if selected == "refined":
+            model_to_evaluate = refined_model
+            model_display_name = refined_model_name
         else:
-            st.info("ℹ️ Modèle entraîné")
+            model_to_evaluate = best_model
+            model_display_name = best_model_name
     
-    # Afficher le score du meilleur modèle de la comparaison si disponible
-    with col2:
-        if best_model_score is not None and best_model_name:
-            st.info(f"⭐ **Score de référence**\n{best_model_score:.4f}")
-        elif best_model_name and hasattr(st.session_state.get('comparator', None), 'best_score'):
-            st.info(f"⭐ **Score de référence**\n{st.session_state.comparator.best_score:.4f}")
+    # Sinon, utiliser le modèle disponible
+    elif refined_model is not None:
+        model_to_evaluate = refined_model
+        model_display_name = refined_model_name or "Modèle affiné"
+    elif best_model is not None:
+        model_to_evaluate = best_model
+        model_display_name = best_model_name or "Meilleur modèle"
+    else:
+        st.error("❌ Aucun modèle disponible pour l'évaluation.")
+        return
     
-    # Ligne de séparation
+    # Afficher le modèle en cours d'évaluation
+    st.success(f"📊 **Modèle évalué** : {model_display_name}")
     st.markdown("---")
     
-    preds = model.predict(X_test)
+    preds = model_to_evaluate.predict(X_test)
 
     # Détection automatique du type
     is_classification = y_test.dtype == "object" or y_test.nunique() < 20
@@ -76,8 +97,8 @@ def run_evaluation(model, X_test, y_test):
             le = LabelEncoder()
             y_true_encoded = le.fit_transform(y_test)
             
-            if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(X_test)[:, 1]
+            if hasattr(model_to_evaluate, "predict_proba"):
+                proba = model_to_evaluate.predict_proba(X_test)[:, 1]
             else:
                 # fallback si pas de predict_proba
                 proba = preds if np.issubdtype(preds.dtype, np.number) else y_true_encoded

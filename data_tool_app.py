@@ -382,14 +382,8 @@ elif section == "🔬 Comparaison de Modèles":
 elif section == "📈 Évaluation":
     st.header("📈 Évaluation du modèle")
     
-    # Détecter la source du modèle
-    if "best_model_name" in st.session_state:
-        st.success(f"🏆 **Modèle sélectionné** : {st.session_state['best_model_name']}")
-        if "comparator" in st.session_state:
-            st.info(f"📊 **Score** : {st.session_state['comparator'].best_score:.4f}")
-    
-    if "model" in st.session_state:
-        evaluation.run_evaluation(st.session_state["model"], st.session_state["X_test"], st.session_state["y_test"])
+    if "model" in st.session_state or "best_model" in st.session_state:
+        evaluation.run_evaluation(st.session_state["X_test"], st.session_state["y_test"])
         
         # Bouton pour le reporting
         st.markdown("---")
