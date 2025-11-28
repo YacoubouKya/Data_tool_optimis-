@@ -658,7 +658,9 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             st.session_state.update({
                 "comparison_results": results_df,
                 "comparator": comparator,
-                "best_model": best_model_pipeline
+                "best_model": best_model_pipeline,
+                "best_model_name": comparator.best_model,
+                "best_model_score": comparator.best_score
             })
             
             return {

@@ -15,19 +15,32 @@ from sklearn.preprocessing import LabelEncoder
 def run_evaluation(model, X_test, y_test):
     st.subheader("📈 Évaluation du modèle")
     
-    # Afficher le modèle utilisé
+    # Récupérer les informations du modèle
     model_name = st.session_state.get("current_model_name", None)
     best_model_name = st.session_state.get("best_model_name", None)
+    best_model_score = st.session_state.get("best_model_score", None)
     
-    if model_name:
-        # Modèle vient de l'affinage
-        st.success(f"🎯 **Modèle évalué** : {model_name}")
-    elif best_model_name:
-        # Modèle vient de la comparaison
-        st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model_name}")
-    else:
-        st.info("ℹ️ Modèle entraîné")
+    # Afficher les informations du modèle évalué
+    col1, col2 = st.columns(2)
     
+    with col1:
+        if model_name:
+            # Modèle vient de l'affinage
+            st.success(f"🎯 **Modèle évalué**\n{model_name}")
+        elif best_model_name:
+            # Modèle vient de la comparaison
+            st.success(f"🏆 **Meilleur modèle**\n{best_model_name}")
+        else:
+            st.info("ℹ️ Modèle entraîné")
+    
+    # Afficher le score du meilleur modèle de la comparaison si disponible
+    with col2:
+        if best_model_score is not None and best_model_name:
+            st.info(f"⭐ **Score de référence**\n{best_model_score:.4f}")
+        elif best_model_name and hasattr(st.session_state.get('comparator', None), 'best_score'):
+            st.info(f"⭐ **Score de référence**\n{st.session_state.comparator.best_score:.4f}")
+    
+    # Ligne de séparation
     st.markdown("---")
     
     preds = model.predict(X_test)
