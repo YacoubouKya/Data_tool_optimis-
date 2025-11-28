@@ -105,24 +105,20 @@ def select_task_type_with_ui(y: pd.Series, key_suffix: str = "") -> str:
     auto_task = detect_task_type(y, "auto")
     
     # Interface compacte et épurée
-    col1, col2 = st.columns([3, 1])
+    # Déterminer l'index par défaut (0=Classification, 1=Régression)
+    default_index = 0 if auto_task == "classification" else 1
     
-    with col1:
-        # Déterminer l'index par défaut (0=Classification, 1=Régression)
-        default_index = 0 if auto_task == "classification" else 1
-        
-        task_choice = st.radio(
-            "🎯 Type de modélisation",
-            options=["Classification", "Régression"],
-            index=default_index,
-            key=f"task_type_{key_suffix}",
-            horizontal=True
-        )
+    task_choice = st.radio(
+        "🎯 Type de modélisation",
+        options=["Classification", "Régression"],
+        index=default_index,
+        key=f"task_type_{key_suffix}",
+        horizontal=True
+    )
     
-    with col2:
-        # Indication simple si modifié
-        if task_choice.lower() != auto_task:
-            st.caption(f"🔄 Modifié (auto: {auto_task})")
+    # Indication simple si modifié (en dessous du radio)
+    if task_choice.lower() != auto_task:
+        st.caption(f"🔄 Modifié (détection auto: {auto_task})")
     
     return task_choice.lower()
 
