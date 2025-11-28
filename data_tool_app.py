@@ -279,20 +279,23 @@ def run_preprocessing_section(df, mode):
 @safe_execute("Affinage de Modèle")
 def run_modeling_section(df):
     """Exécute l'affinage de modèle de manière sécurisée"""
-    if validate_dataframe(df, min_rows=10, min_cols=2):
-        modeling.run_modeling(df)
+    if not validate_dataframe(df, min_rows=10, min_cols=2):
+        return  # Arrêter si validation échoue
+    modeling.run_modeling(df)
 
 @safe_execute("Comparaison de Modèles")
 def run_comparison_section(df):
     """Exécute la comparaison de modèles de manière sécurisée"""
-    if validate_dataframe(df, min_rows=10, min_cols=2):
-        model_comparison.run_model_comparison(df)
+    if not validate_dataframe(df, min_rows=10, min_cols=2):
+        return  # Arrêter si validation échoue
+    model_comparison.run_model_comparison(df)
 
 @safe_execute("Évaluation du Modèle")
 def run_evaluation_section():
     """Exécute l'évaluation de manière sécurisée"""
-    if validate_session_state(["X_test", "y_test"]):
-        evaluation.run_evaluation(st.session_state["X_test"], st.session_state["y_test"])
+    if not validate_session_state(["X_test", "y_test"]):
+        return  # Arrêter si validation échoue
+    evaluation.run_evaluation(st.session_state["X_test"], st.session_state["y_test"])
 
 @safe_execute("Génération du Rapport")
 def run_reporting_section():

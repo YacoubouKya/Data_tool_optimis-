@@ -53,11 +53,13 @@ def safe_execute(section_name):
                 # Afficher un message convivial à l'utilisateur
                 st.error(f"❌ **Une erreur est survenue dans la section : {section_name}**")
                 
-                # Détails de l'erreur (repliable)
-                with st.expander("🔍 Détails de l'erreur (pour le débogage)", expanded=False):
-                    st.code(str(e), language="text")
-                    st.markdown("**Stack trace complet :**")
-                    st.code(traceback.format_exc(), language="text")
+                # Afficher le message d'erreur de manière propre (seulement si pertinent)
+                error_text = str(e)
+                
+                # Ne pas afficher les erreurs techniques Streamlit à l'utilisateur
+                if "key=" not in error_text.lower() and "widget" not in error_text.lower():
+                    with st.expander("📋 Message d'erreur", expanded=False):
+                        st.code(error_text, language="text")
                 
                 # Suggestions de solutions
                 st.warning("""
