@@ -314,7 +314,7 @@ if section == "📥 Chargement":
     sep = ","; sheet = None
     if uploaded:
         if uploaded.name.lower().endswith(".csv"):
-            sep = st.selectbox("Séparateur CSV", options=[",", ";", "\t", "|", " ", "Autre"], index=0)
+            sep = st.selectbox("Séparateur CSV", options=[",", ";", "\t"], index=0)
         elif uploaded.name.lower().endswith((".xls", ".xlsx")):
             xls = pd.ExcelFile(uploaded)
             sheet = st.selectbox("Choisissez la feuille Excel", options=xls.sheet_names)
