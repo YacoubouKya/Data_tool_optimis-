@@ -30,14 +30,24 @@ def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Uni
             if sep is None:
                 sep = ','  # Valeur par défaut
             
-            # Réinitialiser le pointeur du fichier
-            uploaded_file.seek(0)
+            # Première tentative de lecture
             try:
+                uploaded_file.seek(0)
                 return pd.read_csv(uploaded_file, sep=sep, on_bad_lines='warn')
-            except Exception as e:
-                st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
-                st.warning("ℹ️ Le séparateur actuel ne semble pas correct. Veuillez sélectionner un autre séparateur dans le menu déroulant ci-dessus.")
-                return None
+            except Exception:
+                # En cas d'échec, essayer avec la méthode alternative
+                try:
+                    uploaded_file.seek(0)
+                    content = uploaded_file.read()
+                    return pd.read_csv(
+                        io.StringIO(content.decode('utf-8', errors='ignore')), 
+                        sep=sep,
+                        on_bad_lines='warn'
+                    )
+                except Exception as e:
+                    st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
+                    st.warning("ℹ️ Le séparateur actuel ne semble pas correct. Veuillez sélectionner un autre séparateur dans le menu déroulant ci-dessus.")
+                    return None
                 
     except Exception as e:
         st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
