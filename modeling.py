@@ -199,11 +199,19 @@ def run_modeling(df: pd.DataFrame) -> dict:
     st.subheader("⚡ Modélisation interactive")
     
     # Détecter si on vient de la comparaison
-    from_comparison = "best_model_name" in st.session_state and "comparison_results" in st.session_state
+    from_comparison = ("best_model_name" in st.session_state and 
+                      st.session_state['best_model_name'] is not None and
+                      "comparison_results" in st.session_state and 
+                      st.session_state['comparison_results'] is not None)
+    
     
     if from_comparison:
         best_model = st.session_state['best_model_name']
         comparison_results = st.session_state['comparison_results']
+
+        # Vérifier que best_model n'est pas vide
+        if not best_model:
+            from_comparison = False
         
         # Récupérer le score du meilleur modèle
         best_row = comparison_results[comparison_results['Modèle'] == best_model]
@@ -712,5 +720,6 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "task": task,
             "y_pred_proba": preds_proba
         }
+
 
     st.stop()
