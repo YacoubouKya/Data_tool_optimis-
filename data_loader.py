@@ -27,20 +27,18 @@ def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Uni
             return pd.read_excel(uploaded_file, sheet_name=sheet_name)
             
         elif filename.endswith(('.csv', '.txt', '.tsv')):
+            if sep is None:
+                sep = ','  # Valeur par défaut
+            
+            # Réinitialiser le pointeur du fichier
+            uploaded_file.seek(0)
             try:
-                # Essayer avec le séparateur fourni
-                if sep is None:
-                    sep = ','  # Valeur par défaut
-                
-                # Réinitialiser le pointeur du fichier
-                uploaded_file.seek(0)
-                return pd.read_csv(uploaded_file, sep=sep)
-                
+                return pd.read_csv(uploaded_file, sep=sep, on_bad_lines='warn')
             except Exception as e:
-                st.error("❌ Erreur lors du chargement du fichier.")
+                st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
                 st.warning("ℹ️ Le séparateur actuel ne semble pas correct. Veuillez sélectionner un autre séparateur dans le menu déroulant ci-dessus.")
-                return None  # Retourne None sans arrêter l'exécution
+                return None
                 
     except Exception as e:
         st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
-        return None  # Retourne None sans arrêter l'exécution
+        return None
