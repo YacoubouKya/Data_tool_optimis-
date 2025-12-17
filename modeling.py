@@ -16,6 +16,7 @@ from sklearn.svm import SVC, SVR
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
+from category_encoders import TargetEncoder
 import joblib
 from typing import Tuple, Any, Dict
 import helpers
@@ -120,6 +121,79 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
         st.success(f"✅ Validation réussie : {X.shape[0]} lignes × {X.shape[1]} features")
     
     return validation_passed
+
+def build_modeling_pipeline(model, X, do_scale=True, use_target_encoding=True):
+    """
+    Construit le pipeline de modélisation avec gestion des variables catégorielles
+    
+    Args:
+        model: Modèle à utiliser
+        X: Données d'entraînement
+        do_scale: Si True, standardise les variables numériques
+        use_target_encoding: Si True, utilise le Target Encoding pour les variables à haute cardinalité
+    """
+    num_cols = X.select_dtypes(include="number").columns.tolist()
+    cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
+    
+    # Convertir les catégorielles en string
+    if cat_cols:
+        X[cat_cols] = X[cat_cols].astype(str)
+    
+    # Pipeline pour les colonnes numériques
+    num_steps = []
+    if num_cols:
+        num_steps = [("imputer", SimpleImputer(strategy="median"))]
+        if do_scale:
+            num_steps.append(("scaler", StandardScaler()))
+    
+    # Gestion des variables catégorielles
+    transformers = []
+    
+    # 1. Colonnes numériques
+    if num_cols:
+        transformers.append(("num", Pipeline(num_steps), num_cols))
+    
+    # 2. Colonnes catégorielles
+    if cat_cols:
+        # Séparation basse/élevée cardinalité
+        low_card_cols = [col for col in cat_cols if X[col].nunique() <= 100]
+        high_card_cols = [col for col in cat_cols if X[col].nunique() > 100]
+        
+        # Pipeline pour basse cardinalité (OneHot)
+        if low_card_cols:
+            cat_steps_low = Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
+            ])
+            transformers.append(("cat_low", cat_steps_low, low_card_cols))
+        
+        # Pipeline pour haute cardinalité (Target Encoding)
+        if high_card_cols and use_target_encoding:
+            st.warning(f"⚠️ Colonnes à haute cardinalité détectées : {', '.join(high_card_cols)}")
+            st.info("Utilisation de Target Encoding pour ces variables")
+            
+            cat_steps_high = Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("target_enc", TargetEncoder())
+            ])
+            transformers.append(("cat_high", cat_steps_high, high_card_cols))
+        elif high_card_cols:
+            st.warning(f"⚠️ Colonnes à haute cardinalité ignorées : {', '.join(high_card_cols)}")
+    
+    # Création du ColumnTransformer
+    preprocessor = ColumnTransformer(
+        transformers=transformers,
+        remainder="drop",
+        verbose_feature_names_out=False
+    )
+    
+    # Création du pipeline final
+    pipeline = Pipeline([
+        ("preprocessor", preprocessor),
+        ("model", model)
+    ])
+    
+    return pipeline
 
 def run_modeling(df: pd.DataFrame) -> dict:
     st.subheader("⚡ Modélisation interactive")
@@ -235,6 +309,13 @@ def run_modeling(df: pd.DataFrame) -> dict:
             st.metric("📌 Mode", str(y.mode()[0])[:10] if not y.mode().empty else "N/A")
     
     st.markdown("---")
+
+    # Option pour activer/désactiver le Target Encoding
+    use_target_encoding = st.checkbox(
+        "Utiliser Target Encoding pour les variables à haute cardinalité",
+        value=True,
+        help="Active le Target Encoding pour les variables catégorielles avec plus de 100 valeurs uniques"
+    )
     
     # Configuration compacte
     st.markdown("### ⚙️ Configuration")
@@ -428,43 +509,23 @@ def run_modeling(df: pd.DataFrame) -> dict:
         st.info("Ce modèle n'a pas d'hyperparamètres à configurer.")
 
     if st.button("🚀 Lancer l'entraînement"):
-        # Préprocessing pipeline avec filtrage des colonnes à haute cardinalité
-        num_cols = X.select_dtypes(include="number").columns.tolist()
-        cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
-        if cat_cols:
-            X[cat_cols] = X[cat_cols].astype(str)
-
-        num_steps = []
-        if num_cols:
-            num_steps = [("imputer", SimpleImputer(strategy="median"))]
-            if do_scale:
-                num_steps.append(("scaler", StandardScaler()))
-
-        # Filtrer les colonnes catégorielles à haute cardinalité (> 100 valeurs)
-        cat_steps = []
-        low_card_cols = []
-        if cat_cols:
-            for col in cat_cols:
-                n_unique = X[col].nunique()
-                if n_unique <= 100:
-                    low_card_cols.append(col)
-                else:
-                    st.warning(f"⚠️ Colonne '{col}' ignorée : {n_unique} valeurs uniques (> 100)")
-            
-            if low_card_cols:
-                cat_steps = [
-                    ("imputer", SimpleImputer(strategy="most_frequent")),
-                    ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False, max_categories=100))
-                ]
-
-        transformers = []
-        if num_cols:
-            transformers.append(("num", Pipeline(num_steps), num_cols))
-        if low_card_cols:
-            transformers.append(("cat", Pipeline(cat_steps), low_card_cols))
-
-        preprocessor = ColumnTransformer(transformers=transformers, remainder="drop", verbose_feature_names_out=False)
-
+        with st.spinner("Préparation des données..."):
+            # Préparation des données
+            num_cols = X.select_dtypes(include="number").columns.tolist()
+            cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
+        
+            if cat_cols:
+                X[cat_cols] = X[cat_cols].astype(str)
+        
+            # Utiliser la fonction build_modeling_pipeline
+            pipeline = build_modeling_pipeline(
+                model=None,  # Le modèle sera ajouté plus tard
+                X=X,
+                do_scale=do_scale,
+                use_target_encoding=use_target_encoding
+            )
+        
+        
         # Choix du modèle avec tous les hyperparamètres
         if model_choice == "random_forest":
             if task == "classification":
@@ -527,15 +588,21 @@ def run_modeling(df: pd.DataFrame) -> dict:
             else:
                 model = RandomForestRegressor(random_state=random_state)
 
-        pipe = Pipeline([("preprocessor", preprocessor), ("model", model)])
+        preprocessor = pipeline.named_steps['preprocessor']
 
+        pipe = Pipeline([
+            ('preprocessor', preprocessor),
+            ('model', model)  # Le modèle sélectionné
+        ])
+        
         # Split & train avec gestion d'erreurs robuste
         try:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+            X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=test_size, random_state=random_state)
             
             with st.spinner("🔄 Entraînement du modèle en cours..."):
                 pipe.fit(X_train, y_train)
                 preds = pipe.predict(X_test)
+                preds_proba = pipe.predict_proba(X_test)[:, 1] if hasattr(pipe, "predict_proba") else None
                 
         except ValueError as e:
             st.error(f"❌ **Erreur de données** : {str(e)}")
@@ -616,8 +683,10 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "task": task,
             "task_type": task,
             "y_pred": preds,
+            "y_pred_proba": preds_proba,
             "evaluation_metrics": pd.DataFrame([metrics_display]),
-            "current_model_name": model_display_choice  # Stocker le nom du modèle pour l'évaluation
+            "current_model_name": model_display_choice,  # Stocker le nom du modèle pour l'évaluation
+            "use_target_encoding": use_target_encoding
         })
 
         # Feature importance si disponible (essayer d'extraire proprement)
@@ -640,7 +709,8 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "X_test": X_test,
             "y_train": y_train,
             "y_test": y_test,
-            "task": task
+            "task": task,
+            "y_pred_proba": preds_proba
         }
 
     st.stop()
