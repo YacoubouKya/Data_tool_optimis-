@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
+from category_encoders import TargetEncoder
 from sklearn.pipeline import Pipeline
 from typing import Tuple, Optional, Any
 
@@ -172,42 +173,43 @@ def build_preprocessor(X: pd.DataFrame, do_scale: bool = True) -> ColumnTransfor
         if do_scale:
             num_steps.append(("scaler", StandardScaler()))
     
-    # Pipeline pour les colonnes catégorielles avec gestion de la haute cardinalité
-    cat_steps = []
-    if cat_cols:
-        # Filtrer les colonnes à haute cardinalité (> 100 valeurs uniques)
-        low_card_cols = []
-        high_card_cols = []
-        
-        for col in cat_cols:
-            n_unique = X[col].nunique()
-            if n_unique <= 100:
-                low_card_cols.append(col)
-            else:
-                high_card_cols.append(col)
-                import streamlit as st
-                st.warning(f"⚠️ Colonne '{col}' ignorée : {n_unique} valeurs uniques (> 100)")
-        
-        # Utiliser OneHotEncoder seulement pour les colonnes à faible cardinalité
-        if low_card_cols:
-            cat_steps = [
-                ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False, max_categories=100))
-            ]
-    
-    # Assembler les transformers
+    # Gestion des variables catégorielles
     transformers = []
+    
+    # 1. Colonnes numériques
     if num_cols:
         transformers.append(("num", Pipeline(num_steps), num_cols))
-    if cat_cols and low_card_cols:
-        transformers.append(("cat", Pipeline(cat_steps), low_card_cols))
+    
+    # 2. Colonnes catégorielles
+    if cat_cols:
+        # Séparation basse/élevée cardinalité
+        low_card_cols = [col for col in cat_cols if X[col].nunique() <= 100]
+        high_card_cols = [col for col in cat_cols if X[col].nunique() > 100]
+        
+        # Pipeline pour basse cardinalité (OneHot)
+        if low_card_cols:
+            cat_steps_low = Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False, max_categories=100))
+            ])
+            transformers.append(("cat_low", cat_steps_low, low_card_cols))
+        
+        # Pipeline pour haute cardinalité (Target Encoding)
+        if high_card_cols:
+            st.warning(f"⚠️ Colonnes à haute cardinalité détectées : {', '.join(high_card_cols)}")
+            st.info("Utilisation de Target Encoding pour ces variables")
+            
+            cat_steps_high = Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("target_enc", TargetEncoder())
+            ])
+            transformers.append(("cat_high", cat_steps_high, high_card_cols))
     
     return ColumnTransformer(
         transformers=transformers,
         remainder="drop",
         verbose_feature_names_out=False
     )
-
 
 def prepare_data_for_modeling(
     df: pd.DataFrame,

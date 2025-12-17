@@ -36,14 +36,16 @@ import model_utils  # Import du nouveau module d'utilitaires
 class ModelComparator:
     """Classe pour comparer plusieurs modèles ML"""
     
-    def __init__(self, task: str = "classification"):
+    def __init__(self, task: str = "classification", use_target_encoding: bool = True):
         """
         Initialise le comparateur de modèles
         
         Args:
             task: Type de tâche ("classification" ou "regression")
+            use_target_encoding: Si True, utilise le Target Encoding pour les variables à haute cardinalité
         """
         self.task = task
+        self.use_target_encoding = use_target_encoding
         self.results = []
         self.models = {}
         self.best_model = None
@@ -493,6 +495,12 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     st.markdown("### 🎯 Sélection des Modèles")
     
     comparator = ModelComparator(task=task)
+    # option pour activer/désactiver le Target Encoding
+    comparator.use_target_encoding = st.checkbox(
+    "Utiliser Target Encoding pour les variables à haute cardinalité", 
+        value=True,
+        help="Active le Target Encoding pour les variables catégorielles avec plus de 100 valeurs uniques"
+    )
     available_models = list(comparator.get_available_models().keys())
     
     # Vérifier la taille du dataset pour recommandations
