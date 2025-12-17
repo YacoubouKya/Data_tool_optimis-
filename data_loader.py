@@ -7,45 +7,13 @@ import io
 import streamlit as st
 from typing import Optional, Union, Dict, Any
 
-def detect_separator(content: str, sample_size: int = 5) -> str:
-    """
-    Détecte automatiquement le séparateur utilisé dans un fichier CSV.
-    
-    Args:
-        content: Contenu du fichier sous forme de chaîne
-        sample_size: Nombre de lignes à analyser pour la détection
-        
-    Returns:
-        Le séparateur détecté (',' par défaut)
-    """
-    # Séparateurs courants à tester
-    possible_separators = [',', ';', '\t', '|', ' ']
-    lines = content.split('\n')[:sample_size]
-    lines = [line for line in lines if line.strip()]  # Enlever les lignes vides
-    
-    if not lines:
-        return ','  # Valeur par défaut si pas de lignes
-    
-    # Compter les occurrences de chaque séparateur
-    separator_counts = {sep: 0 for sep in possible_separators}
-    
-    for line in lines:
-        for sep in possible_separators:
-            separator_counts[sep] += line.count(sep)
-    
-    # Trouver le séparateur le plus fréquent
-    detected_sep = max(separator_counts.items(), key=lambda x: x[1])[0]
-    
-    # Si aucun séparateur n'est trouvé, utiliser la virgule par défaut
-    return detected_sep if separator_counts[detected_sep] > 0 else ','
-
 def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Union[str, int]] = None) -> Optional[pd.DataFrame]:
     """
-    Charge un fichier CSV ou Excel avec gestion automatique du séparateur.
+    Charge un fichier CSV ou Excel avec gestion des séparateurs.
     
     Args:
         uploaded_file: Fichier téléchargé via Streamlit
-        sep: Séparateur à utiliser (si None, détection automatique)
+        sep: Séparateur à utiliser (si None, tentative de détection automatique)
         sheet_name: Nom ou index de la feuille Excel (None = première feuille)
         
     Returns:
@@ -56,7 +24,7 @@ def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Uni
     
     filename = uploaded_file.name.lower()
     df = None
-    error_msg = None
+    content_str = None
 
     try:
         # Lire le contenu du fichier
@@ -64,49 +32,69 @@ def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Uni
         
         # Si c'est un fichier Excel
         if filename.endswith(('.xls', '.xlsx', '.xlsm', '.xlsb')):
-            df = pd.read_excel(io.BytesIO(content), sheet_name=sheet_name)
-        # Si c'est un fichier CSV
-        elif filename.endswith(('.csv', '.txt', '.tsv')):
-            # Détecter le séparateur si non spécifié
-            if sep is None:
-                try:
-                    # Essayer avec le séparateur par défaut d'abord
-                    content_str = content.decode('utf-8', errors='ignore')
-                    sep = detect_separator(content_str)
-                    st.info(f"🔍 Séparateur détecté automatiquement : '{sep}'")
-                except Exception as e:
-                    st.warning("⚠️ Impossible de détecter le séparateur, utilisation de la virgule par défaut")
-                    sep = ','
-            
-            # Essayer de lire avec le séparateur détecté
-            try:
-                df = pd.read_csv(io.StringIO(content_str), sep=sep, on_bad_lines='warn')
-            except Exception as e:
-                st.error(f"❌ Erreur lors de la lecture du fichier avec le séparateur '{sep}'. Tentative avec détection automatique...")
-                # Essayer avec différents séparateurs
-                for possible_sep in [',', ';', '\t', '|', ' ']:
-                    if possible_sep != sep:  # Ne pas réessayer le séparateur déjà testé
-                        try:
-                            df = pd.read_csv(io.StringIO(content_str), sep=possible_sep)
-                            st.success(f"✅ Fichier chargé avec succès avec le séparateur: '{possible_sep}'")
-                            break
-                        except:
-                            continue
-                
-                if df is None:
-                    raise ValueError("Impossible de charger le fichier avec les séparateurs testés")
+            return pd.read_excel(io.BytesIO(content), sheet_name=sheet_name)
         
-        # Nettoyage des noms de colonnes
-        if df is not None:
-            df.columns = df.columns.str.strip()  # Enlever les espaces
-            # Supprimer les colonnes vides
-            df = df.dropna(axis=1, how='all')
-            # Supprimer les lignes vides
-            df = df.dropna(how='all')
+        # Pour les fichiers texte (CSV, TXT, TSV)
+        content_str = content.decode('utf-8', errors='ignore')
+        
+        # Essayer de lire avec le séparateur fourni ou détecté
+        try:
+            if sep is None:
+                # Essayer les séparateurs courants
+                for possible_sep in [',', ';', '\t', '|', ' ']:
+                    try:
+                        df = pd.read_csv(io.StringIO(content_str), sep=possible_sep)
+                        st.success(f"✅ Fichier chargé avec succès avec le séparateur: '{possible_sep}'")
+                        return df
+                    except:
+                        continue
+                raise ValueError("Aucun séparateur standard n'a fonctionné")
+            else:
+                return pd.read_csv(io.StringIO(content_str), sep=sep)
+                
+        except Exception as e:
+            # Si échec, proposer à l'utilisateur de choisir le séparateur
+            st.error("❌ Impossible de charger le fichier avec les séparateurs standards.")
+            st.warning("Veuillez spécifier le bon séparateur :")
             
+            # Afficher un aperçu du fichier
+            st.text("Aperçu des premières lignes :")
+            st.code("\n".join(content_str.split('\n')[:5]))
+            
+            # Proposer les séparateurs courants + personnalisé
+            sep_options = {
+                "Virgule (,)" : ",",
+                "Point-virgule (;)" : ";",
+                "Tabulation" : "\t",
+                "Barre verticale (|)" : "|",
+                "Espace" : " ",
+                "Autre (à préciser)" : "custom"
+            }
+            
+            selected_sep = st.radio("Séparateur :", list(sep_options.keys()))
+            
+            if selected_sep == "Autre (à préciser)":
+                custom_sep = st.text_input("Veuillez entrer le séparateur :", value=",")
+                if custom_sep:
+                    try:
+                        df = pd.read_csv(io.StringIO(content_str), sep=custom_sep)
+                        st.success(f"✅ Fichier chargé avec succès avec le séparateur personnalisé")
+                        return df
+                    except Exception as e:
+                        st.error(f"❌ Échec avec le séparateur personnalisé : {str(e)}")
+                        st.stop()
+            else:
+                try:
+                    sep = sep_options[selected_sep]
+                    df = pd.read_csv(io.StringIO(content_str), sep=sep)
+                    st.success(f"✅ Fichier chargé avec succès avec le séparateur : '{sep}'")
+                    return df
+                except Exception as e:
+                    st.error(f"❌ Échec avec le séparateur sélectionné : {str(e)}")
+                    st.stop()
+                    
     except Exception as e:
-        error_msg = str(e)
-        st.error(f"❌ Erreur lors du chargement du fichier : {error_msg}")
+        st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
         st.stop()
     
-    return df
+    return None
