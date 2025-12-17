@@ -40,10 +40,9 @@ def load_file(uploaded_file, sep: Optional[str] = None, sheet_name: Optional[Uni
             except Exception as e:
                 st.error("❌ Erreur lors du chargement du fichier.")
                 st.warning("ℹ️ Le séparateur actuel ne semble pas correct. Veuillez sélectionner le bon séparateur dans le menu déroulant ci-dessus.")
-                st.stop()
                 return None
                 
     except Exception as e:
         st.error(f"❌ Erreur lors du chargement du fichier : {str(e)}")
-        st.stop()
+
         return None
