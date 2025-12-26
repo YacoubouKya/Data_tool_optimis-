@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
+st.caption("Développé par Yacoubou KOUMAI - © 2025 | v1.0.0")
 # ------------------------
 # 🎨 CSS personnalisé (V1)
 # ------------------------
@@ -443,3 +443,4 @@ elif section == "📈 Évaluation":
 elif section == "📝 Reporting":
     st.header("📝 Reporting")
     run_reporting_section()
+
