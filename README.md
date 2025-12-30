@@ -1,4 +1,4 @@
-# 🐍 Data Project Tool
+#  Data Project Tool
 
 **Outil interactif d'analyse de données et de modélisation Machine Learning**
 
@@ -7,15 +7,15 @@
 ![Streamlit](https://img.shields.io/badge/streamlit-1.30.0-red)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🚀 Démo en ligne
+## Démo en ligne
 
-👉 **[Accéder à l'application déployée](https://share.streamlit.io)**
+👉 **https://data-tool-koumai.streamlit.app/**
 
 > **Note** : Cette application est déployée sur Streamlit Cloud et accessible sans installation.
 
 ---
 
-## 📋 Table des matières
+## Table des matières
 
 - [Présentation](#présentation)
 - [Fonctionnalités](#fonctionnalités)
@@ -28,34 +28,34 @@
 
 ---
 
-## 🎯 Présentation
+##  Présentation
 
 **Data Project Tool** est une application web interactive construite avec Streamlit qui permet de :
-- 📥 Charger des données (CSV, Excel)
-- 🔎 Effectuer une analyse exploratoire automatique
-- 🛠️ Détecter et corriger les anomalies
-- 🤖 Entraîner des modèles de Machine Learning
-- 📈 Évaluer les performances
-- 📝 Générer des rapports HTML consolidés
+-  Charger des données (CSV, Excel)
+-  Effectuer une analyse exploratoire automatique
+-  Détecter et corriger les anomalies
+-  Entraîner des modèles de Machine Learning
+-  Évaluer les performances
+-  Générer des rapports HTML consolidés
 
 ---
 
-## ✨ Fonctionnalités
+##  Fonctionnalités
 
-### 1. 📥 Chargement de données
+### 1.  Chargement de données
 - Support CSV (avec choix du séparateur)
 - Support Excel (avec sélection de feuille)
 - Gestion automatique des encodages
 - Aperçu immédiat des données
 
-### 2. 🔎 Analyse exploratoire (EDA)
+### 2.  Analyse exploratoire (EDA)
 - Profiling automatique avec **ydata-profiling**
 - Statistiques descriptives complètes
 - Histogrammes interactifs
 - Matrice de corrélation
 - Export du rapport HTML
 
-### 3. 🛠️ Prétraitement intelligent
+### 3.  Prétraitement intelligent
 - **Détection automatique** des anomalies :
   - Valeurs manquantes
   - Doublons
@@ -69,7 +69,7 @@
 - **Log détaillé** des modifications
 - Export des données corrigées
 
-### 4. 🤖 Modélisation Machine Learning
+### 4.  Modélisation Machine Learning
 - **Auto-détection** du type de tâche (classification/régression)
 - **Modèles disponibles** :
   - Random Forest
@@ -83,7 +83,7 @@
 - **Hyperparamètres personnalisables**
 - Sauvegarde automatique des modèles
 
-### 5. 📈 Évaluation
+### 5.  Évaluation
 #### Classification
 - Métriques : Accuracy, F1-score, Precision, Recall
 - Matrice de confusion
@@ -96,7 +96,7 @@
 - Analyse des résidus
 - QQ-plot
 
-### 6. 📝 Reporting
+### 6.  Reporting
 - Rapport HTML consolidé
 - Toutes les sections du workflow
 - Graphiques intégrés (base64)
@@ -104,7 +104,7 @@
 
 ---
 
-## 🚀 Installation
+##  Installation
 
 ### Prérequis
 - **Python 3.9 ou supérieur**
@@ -165,61 +165,61 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 3. **Workflow recommandé** :
    ```
-   📥 Chargement → 🔎 EDA → 🛠️ Prétraitement → 🤖 Modélisation → 📈 Évaluation → 📝 Reporting
+    Chargement →  EDA →  Prétraitement →  Modélisation →  Évaluation →  Reporting
    ```
 
 ### Exemple avec vos données
 
 ```python
 # 1. Charger le fichier Excel
-# Aller dans "📥 Chargement"
+# Aller dans " Chargement"
 # Uploader "Portefeuille AGMF_prev.xlsx"
 # Sélectionner la feuille désirée
 
 # 2. Explorer les données
-# Aller dans "🔎 EDA"
+# Aller dans " EDA"
 # Cliquer sur "Générer le rapport de Profiling"
 # Analyser les statistiques et visualisations
 
 # 3. Nettoyer les données
-# Aller dans "🛠️ Prétraitement"
+# Aller dans " Prétraitement"
 # Sélectionner les corrections à appliquer
 # Télécharger la base corrigée
 
 # 4. Entraîner un modèle
-# Aller dans "🤖 Modélisation"
+# Aller dans " Modélisation"
 # Choisir la variable cible
 # Configurer les hyperparamètres
 # Lancer l'entraînement
 
 # 5. Évaluer le modèle
-# Aller dans "📈 Évaluation"
+# Aller dans " Évaluation"
 # Consulter les métriques
 # Analyser les graphiques
 
 # 6. Générer le rapport
-# Aller dans "📝 Reporting"
+# Aller dans " Reporting"
 # Créer le rapport HTML
 # Télécharger le rapport
 ```
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 Data Tool/
 │
 ├── modules/                      # Modules principaux
 │   ├── __init__.py              # Initialisation du package
-│   ├── data_tool_app.py         # 🎯 Application Streamlit
-│   ├── data_loader.py           # 📥 Chargement de fichiers
-│   ├── eda.py                   # 🔎 Analyse exploratoire
-│   ├── preprocessing.py         # 🛠️ Prétraitement
-│   ├── modeling.py              # 🤖 Modélisation ML
-│   ├── evaluation.py            # 📈 Évaluation
-│   ├── reporting.py             # 📝 Génération de rapports
-│   ├── requirements.txt         # 📦 Dépendances
+│   ├── data_tool_app.py         # Application Streamlit
+│   ├── data_loader.py           # Chargement de fichiers
+│   ├── eda.py                   # Analyse exploratoire
+│   ├── preprocessing.py         # Prétraitement
+│   ├── modeling.py              # Modélisation ML
+│   ├── evaluation.py            # Évaluation
+│   ├── reporting.py             # Génération de rapports
+│   ├── requirements.txt         # Dépendances
 │   └── utils/                   # Utilitaires
 │       ├── __init__.py
 │       ├── helpers.py           # Fonctions helper
@@ -230,14 +230,14 @@ Data Tool/
 │   ├── data/                    # Datasets train/test
 │   └── reports/                 # Rapports HTML
 │
-├── launch.ps1                   # 🚀 Script de lancement
-├── README.md                    # 📖 Ce fichier
-└── DIAGNOSTIC.md                # 🔍 Diagnostic technique
+├── launch.ps1                   # Script de lancement
+├── README.md                    # Ce fichier
+└── DIAGNOSTIC.md                # Diagnostic technique
 ```
 
 ---
 
-## 📦 Dépendances
+##  Dépendances
 
 ### Core
 - `streamlit==1.30.0` - Interface web
@@ -269,7 +269,7 @@ Data Tool/
 
 ---
 
-## 🔧 Troubleshooting
+##  Troubleshooting
 
 ### Problème : Import Error
 
@@ -340,7 +340,7 @@ ZeroDivisionError: division by zero
 
 ---
 
-## 🤝 Contribution
+## Contribution
 
 ### Bugs identifiés
 
@@ -355,13 +355,13 @@ Consultez `DIAGNOSTIC.md` pour la liste complète des bugs et améliorations.
 
 ---
 
-## 📄 License
+##  License
 
 MIT License - Libre d'utilisation et de modification
 
 ---
 
-## 👨‍💻 Auteur
+## Auteur
 
 **Data Tool Team**  
 Version 1.0.0 - Novembre 2024
@@ -377,7 +377,7 @@ Pour toute question ou problème :
 
 ---
 
-## 🎉 Remerciements
+##  Remerciements
 
 - **Streamlit** pour le framework web
 - **scikit-learn** pour les modèles ML
@@ -386,5 +386,6 @@ Pour toute question ou problème :
 
 ---
 
-**Bon codage ! 🚀**
+
+
 
