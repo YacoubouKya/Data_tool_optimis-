@@ -24,7 +24,7 @@ def validate_session_state(required_keys, show_message=True):
     if missing:
         if show_message:
             st.error(f"❌ **Données manquantes** : {', '.join(missing)}")
-            st.info("💡 Retournez aux sections précédentes pour compléter les étapes requises.")
+            st.info(" Retournez aux sections précédentes pour compléter les étapes requises.")
         return False
     
     return True
@@ -46,7 +46,7 @@ def validate_dataframe(df, min_rows=1, min_cols=1, show_message=True):
     if df is None:
         if show_message:
             st.error("❌ Aucune donnée disponible")
-            st.info("💡 Chargez d'abord vos données dans la section 'Chargement'")
+            st.info(" Chargez d'abord vos données dans la section 'Chargement'")
         return False
     
     if not isinstance(df, pd.DataFrame):
@@ -57,7 +57,7 @@ def validate_dataframe(df, min_rows=1, min_cols=1, show_message=True):
     if len(df) < min_rows:
         if show_message:
             st.error(f"❌ Pas assez de lignes (minimum: {min_rows}, actuel: {len(df)})")
-            st.info("💡 Chargez un fichier avec plus de données")
+            st.info(" Chargez un fichier avec plus de données")
         return False
     
     if len(df.columns) < min_cols:
@@ -94,7 +94,7 @@ def validate_target_column(df, target_col, show_message=True):
     if target_col not in df.columns:
         if show_message:
             st.error(f"❌ La colonne '{target_col}' n'existe pas dans les données")
-            st.info(f"💡 Colonnes disponibles : {', '.join(df.columns.tolist())}")
+            st.info(f" Colonnes disponibles : {', '.join(df.columns.tolist())}")
         return False
     
     # Vérifier que la colonne n'est pas entièrement vide
@@ -107,7 +107,7 @@ def validate_target_column(df, target_col, show_message=True):
     if df[target_col].nunique() < 2:
         if show_message:
             st.warning(f"⚠️ La colonne '{target_col}' ne contient qu'une seule valeur unique")
-            st.info("💡 Une variable cible doit avoir au moins 2 valeurs différentes")
+            st.info(" Une variable cible doit avoir au moins 2 valeurs différentes")
         return False
     
     return True
@@ -129,7 +129,7 @@ def validate_model_data(X_train, X_test, y_train, y_test, show_message=True):
     if any(x is None for x in [X_train, X_test, y_train, y_test]):
         if show_message:
             st.error("❌ Données de modélisation manquantes")
-            st.info("💡 Préparez d'abord les données dans la section appropriée")
+            st.info(" Préparez d'abord les données dans la section appropriée")
         return False
     
     # Vérifier les dimensions
@@ -154,7 +154,7 @@ def validate_model_data(X_train, X_test, y_train, y_test, show_message=True):
         if np.isinf(X_train.select_dtypes(include=[np.number])).any().any():
             if show_message:
                 st.error("❌ Les données contiennent des valeurs infinies")
-                st.info("💡 Nettoyez les données avant la modélisation")
+                st.info(" Nettoyez les données avant la modélisation")
             return False
     
     return True
@@ -175,13 +175,13 @@ def validate_model_exists(show_message=True):
     if not has_model and show_message:
         st.error("❌ Aucun modèle entraîné disponible")
         st.info("""
-        💡 **Pour obtenir un modèle :**
+         **Pour obtenir un modèle :**
         
-        **Option 1 (Recommandée)** : Section "🔬 Comparaison de Modèles"
+        **Option 1 (Recommandée)** : Section " Comparaison de Modèles"
         - Comparez plusieurs modèles automatiquement
         - Le meilleur sera sélectionné
         
-        **Option 2** : Section "🎯 Affinage de Modèle"
+        **Option 2** : Section " Affinage de Modèle"
         - Configurez et entraînez un modèle spécifique
         """)
     
@@ -210,7 +210,7 @@ def validate_file_upload(uploaded_file, allowed_extensions=None, show_message=Tr
         if file_ext not in allowed_extensions:
             if show_message:
                 st.error(f"❌ Extension de fichier non autorisée : {file_ext}")
-                st.info(f"💡 Extensions autorisées : {', '.join(allowed_extensions)}")
+                st.info(f" Extensions autorisées : {', '.join(allowed_extensions)}")
             return False
     
     # Vérifier la taille du fichier (limite à 200 MB)
@@ -218,7 +218,7 @@ def validate_file_upload(uploaded_file, allowed_extensions=None, show_message=Tr
     if uploaded_file.size > max_size:
         if show_message:
             st.error(f"❌ Fichier trop volumineux : {uploaded_file.size / (1024*1024):.1f} MB")
-            st.info("💡 Taille maximale autorisée : 200 MB")
+            st.info(" Taille maximale autorisée : 200 MB")
         return False
     
     return True
@@ -312,3 +312,4 @@ def check_data_quality(df, show_warnings=True):
         st.warning(f"⚠️ Dataset volumineux : {memory_mb:.1f} MB en mémoire")
     
     return results
+
