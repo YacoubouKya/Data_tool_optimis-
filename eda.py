@@ -24,6 +24,9 @@ def generate_profile(df: pd.DataFrame):
     n_rows = len(df)
 
     profile = ProfileReport(df, title="Profiling EDA", minimal=True)
+    
+    return profile
+
 
 def run_eda(df: pd.DataFrame):
     st.subheader("Aperçu général")
@@ -118,4 +121,5 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
 
