@@ -43,7 +43,7 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
     Valide que les données sont prêtes pour la modélisation
     Retourne True si les données sont valides, False sinon
     """
-    st.markdown("#### 🔍 Validation pré-modélisation")
+    st.markdown("####  Validation pré-modélisation")
     
     validation_passed = True
     warnings = []
@@ -115,7 +115,7 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
         st.markdown("**⚠️ Avertissements de validation**")
         for warning in warnings:
             st.warning(warning)
-        st.info("💡 Ces avertissements n'empêchent pas l'entraînement, mais peuvent affecter les performances")
+        st.info(" Ces avertissements n'empêchent pas l'entraînement, mais peuvent affecter les performances")
     
     if validation_passed and not errors:
         st.success(f"✅ Validation réussie : {X.shape[0]} lignes × {X.shape[1]} features")
@@ -196,7 +196,7 @@ def build_modeling_pipeline(model, X, do_scale=True, use_target_encoding=True):
     return pipeline
 
 def run_modeling(df: pd.DataFrame) -> dict:
-    st.subheader("⚡ Modélisation interactive")
+    st.subheader(" Modélisation interactive")
     
     # Détecter si on vient de la comparaison
     from_comparison = ("best_model_name" in st.session_state and 
@@ -229,14 +229,14 @@ def run_modeling(df: pd.DataFrame) -> dict:
                     break
             
             if score_col and score_value is not None:
-                st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model} (Score: {score_value:.4f})")
-                st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
+                st.success(f" **Meilleur modèle de la comparaison** : {best_model} (Score: {score_value:.4f})")
+                st.info(" Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
             else:
-                st.success(f"🏆 **Meilleur modèle de la comparaison** : {best_model}")
-                st.info("💡 Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
+                st.success(f" **Meilleur modèle de la comparaison** : {best_model}")
+                st.info(" Les hyperparamètres du meilleur modèle sont pré-remplis. Vous pouvez les modifier pour optimiser davantage.")
         else:
-            st.success(f"🏆 **Meilleur modèle détecté** : {best_model}")
-            st.info("💡 Vous pouvez affiner ce modèle ou en choisir un autre")
+            st.success(f" **Meilleur modèle détecté** : {best_model}")
+            st.info(" Vous pouvez affiner ce modèle ou en choisir un autre")
 
     cols = df.columns.tolist()
     
@@ -260,7 +260,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
     # Validation complète des données (silencieuse si pas d'erreurs)
     if not _validate_data_for_modeling(X, y):
         st.error("❌ Les données ne sont pas valides pour la modélisation")
-        st.info("💡 Corrigez les erreurs ci-dessus avant de continuer")
+        st.info(" Corrigez les erreurs ci-dessus avant de continuer")
         st.stop()
     
     # Vérifier les valeurs manquantes dans y
@@ -307,14 +307,14 @@ def run_modeling(df: pd.DataFrame) -> dict:
     # Afficher les infos de manière compacte
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("📏 Lignes", f"{len(y):,}")
+        st.metric(" Lignes", f"{len(y):,}")
     with col2:
-        st.metric("🎯 Uniques", y.nunique())
+        st.metric(" Uniques", y.nunique())
     with col3:
         if y.dtype in ['int64', 'float64']:
-            st.metric("📈 Moyenne", f"{y.mean():.2f}")
+            st.metric(" Moyenne", f"{y.mean():.2f}")
         else:
-            st.metric("📌 Mode", str(y.mode()[0])[:10] if not y.mode().empty else "N/A")
+            st.metric(" Mode", str(y.mode()[0])[:10] if not y.mode().empty else "N/A")
     
     st.markdown("---")
 
@@ -326,7 +326,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
     )
     
     # Configuration compacte
-    st.markdown("### ⚙️ Configuration")
+    st.markdown("###  Configuration")
     col1, col2, col3 = st.columns(3)
     with col1:
         test_size = st.slider("Taille test (%)", 5, 50, 20) / 100.0
@@ -336,7 +336,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
         do_scale = st.checkbox("Standardiser", value=True)
     
     # Définir tous les modèles disponibles
-    st.markdown("### 🎯 Sélection du Modèle")
+    st.markdown("###  Sélection du Modèle")
     
     # Mapper les noms de la comparaison vers les choix de modeling
     model_mapping = {
@@ -393,7 +393,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
     # Convertir vers le format interne
     model_choice = model_mapping.get(model_display_choice, "random_forest")
     
-    st.info(f"💡 Modèle sélectionné : **{model_display_choice}**")
+    st.info(f" Modèle sélectionné : **{model_display_choice}**")
     
     # Hyperparamètres par défaut
     default_params = {
@@ -462,11 +462,11 @@ def run_modeling(df: pd.DataFrame) -> dict:
                     elif "Lasso" in str(type(best_model_obj)):
                         default_params['lasso_alpha'] = params.get('alpha', 1.0)
                     
-                    st.success("✨ Hyperparamètres du meilleur modèle chargés automatiquement")
+                    st.success(" Hyperparamètres du meilleur modèle chargés automatiquement")
         except Exception as e:
             st.warning(f"⚠️ Impossible d'extraire les hyperparamètres : {str(e)}")
     
-    st.markdown("### ⚙️ Configuration des Hyperparamètres")
+    st.markdown("###  Configuration des Hyperparamètres")
     
     # Afficher uniquement les hyperparamètres du modèle sélectionné
     if model_choice == "random_forest":
@@ -516,7 +516,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
         st.markdown(f"**{model_display_choice}**")
         st.info("Ce modèle n'a pas d'hyperparamètres à configurer.")
 
-    if st.button("🚀 Lancer l'entraînement"):
+    if st.button(" Lancer l'entraînement"):
         with st.spinner("Préparation des données..."):
             # Préparation des données
             num_cols = X.select_dtypes(include="number").columns.tolist()
@@ -614,7 +614,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
                 
         except ValueError as e:
             st.error(f"❌ **Erreur de données** : {str(e)}")
-            st.info("💡 **Suggestions** :")
+            st.info(" **Suggestions** :")
             st.markdown("""
             - Vérifiez que vos données sont compatibles avec le modèle sélectionné
             - Assurez-vous qu'il n'y a pas de valeurs infinies ou NaN dans les features
@@ -624,7 +624,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
             
         except MemoryError:
             st.error("❌ **Mémoire insuffisante** pour entraîner ce modèle")
-            st.info("💡 **Suggestions** :")
+            st.info(" **Suggestions** :")
             st.markdown("""
             - Réduisez la taille de votre dataset (échantillonnage)
             - Choisissez un modèle plus simple (ex: Logistic Regression au lieu de Random Forest)
@@ -635,10 +635,10 @@ def run_modeling(df: pd.DataFrame) -> dict:
         except Exception as e:
             st.error(f"❌ **Erreur inattendue lors de l'entraînement** : {str(e)}")
             st.markdown("---")
-            st.markdown("**🐛 Détails techniques :**")
+            st.markdown("** Détails techniques :**")
             st.exception(e)
             st.markdown("---")
-            st.info("💡 Essayez de recharger vos données ou de choisir un autre modèle")
+            st.info(" Essayez de recharger vos données ou de choisir un autre modèle")
             st.stop()
 
         # Évaluation (metrics utilitaires)
@@ -648,7 +648,7 @@ def run_modeling(df: pd.DataFrame) -> dict:
             metrics_result = metrics.regression_metrics(y_test, preds)
 
         metrics_display = _format_metrics(metrics_result, decimals=4)
-        st.write("📊 **Metrics (test)** :")
+        st.write(" **Metrics (test)** :")
         st.json(metrics_display)
 
         # Sauvegarde modèle et datasets avec gestion d'erreurs
@@ -663,10 +663,10 @@ def run_modeling(df: pd.DataFrame) -> dict:
             st.success(f"✅ Modèle sauvegardé : {model_path}")
         except PermissionError:
             st.warning("⚠️ Impossible de sauvegarder le modèle : permissions insuffisantes")
-            st.info("💡 Le modèle reste disponible dans la session en cours")
+            st.info(" Le modèle reste disponible dans la session en cours")
         except Exception as e:
             st.warning(f"⚠️ Impossible de sauvegarder le modèle : {str(e)}")
-            st.info("💡 Le modèle reste disponible dans la session en cours")
+            st.info(" Le modèle reste disponible dans la session en cours")
         
         # Sauvegarde des datasets
         try:
@@ -723,3 +723,4 @@ def run_modeling(df: pd.DataFrame) -> dict:
 
 
     st.stop()
+
