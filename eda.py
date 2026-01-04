@@ -23,15 +23,11 @@ def generate_profile(df: pd.DataFrame):
     dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
     n_rows = len(df)
     
-    # Échantillonnage intelligent pour les gros datasets
-    if n_rows > 10000 or dataset_size_mb > 5:
-        st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
-        st.info("💡 Échantillonnage de 10,000 lignes pour accélérer le profiling")
-        df_sample = df.sample(n=min(10000, n_rows), random_state=42)
+
         
         # Profiling ultra-minimal pour gros datasets
         profile = ProfileReport(
-            df_sample,
+            df,
             title="Profiling EDA (Échantillon)",
             minimal=True,
             explorative=False,
@@ -63,7 +59,7 @@ def run_eda(df: pd.DataFrame):
         st.session_state.show_report = False
 
     if not st.session_state.report_generated:
-        if st.button("📊 Générer le rapport de Profiling"):
+        if st.button(" Générer le rapport de Profiling"):
             prof = generate_profile(df)
             prof.to_file("profiling_report.html")
             st.session_state.report_generated = True
@@ -73,14 +69,14 @@ def run_eda(df: pd.DataFrame):
         st.success("✅ Rapport de profiling généré.")
         col1, col2, col3 = st.columns([1,1,1])
         with col1:
-            if st.button("👁️ Afficher le rapport"):
+            if st.button(" Afficher le rapport"):
                 st.session_state.show_report = True
         with col2:
-            if st.button("🙈 Masquer le rapport"):
+            if st.button(" Masquer le rapport"):
                 st.session_state.show_report = False
         with col3:
             with open("profiling_report.html", "rb") as f:
-                st.download_button(label="💾 Télécharger le rapport HTML", data=f, file_name="profiling_report.html", mime="text/html")
+                st.download_button(label=" Télécharger le rapport HTML", data=f, file_name="profiling_report.html", mime="text/html")
 
         if st.session_state.show_report:
             with open("profiling_report.html", "r", encoding="utf-8") as f:
@@ -116,17 +112,17 @@ def run_eda(df: pd.DataFrame):
         st.session_state.show_corr = False
 
     if not st.session_state.corr_generated:
-        if st.button("🔗 Générer la matrice de corrélation"):
+        if st.button(" Générer la matrice de corrélation"):
             st.session_state.corr_generated = True
             st.session_state.show_corr = True
 
     if st.session_state.corr_generated:
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("👁️ Afficher corrélation"):
+            if st.button(" Afficher corrélation"):
                 st.session_state.show_corr = True
         with col2:
-            if st.button("🙈 Masquer corrélation"):
+            if st.button(" Masquer corrélation"):
                 st.session_state.show_corr = False
 
         if st.session_state.show_corr:
@@ -137,4 +133,5 @@ def run_eda(df: pd.DataFrame):
             fig, ax = plt.subplots(figsize=(8, 6))
             sns.heatmap(corr_display, annot=True, cmap="coolwarm", center=0, ax=ax)
             st.pyplot(fig)
+
             plt.close(fig)
