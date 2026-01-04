@@ -246,7 +246,7 @@ class ModelComparator:
         # Avertissement pour gros datasets
         if dataset_size_mb > 5 or n_rows > 10000:
             st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
-            st.info(f"💡 Entraînement de {len(selected_models)} modèles - Cela peut prendre 2-5 minutes")
+            st.info(f" Entraînement de {len(selected_models)} modèles - Cela peut prendre 2-5 minutes")
             
             # Désactiver la CV automatiquement pour gros datasets
             if use_cv:
@@ -428,7 +428,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     Returns:
         Dictionnaire avec les résultats
     """
-    st.subheader("🔬 Comparaison de Modèles ML")
+    st.subheader(" Comparaison de Modèles ML")
     
     # Sélection de la variable cible
     cols = df.columns.tolist()
@@ -452,18 +452,18 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     # Afficher les infos de manière compacte
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("📏 Lignes", f"{len(y):,}")
+        st.metric(" Lignes", f"{len(y):,}")
     with col2:
-        st.metric("🎯 Valeurs uniques", y.nunique())
+        st.metric(" Valeurs uniques", y.nunique())
     
     # Toggle pour voir les statistiques détaillées
-    if st.toggle("📈 Voir statistiques détaillées", key="show_stats"):
+    if st.toggle(" Voir statistiques détaillées", key="show_stats"):
         model_utils.display_target_stats(y, task)
     
     st.markdown("---")
     
     # Configuration compacte
-    st.markdown("### ⚙️ Configuration")
+    st.markdown("###  Configuration")
     
     # Vérifier la taille du dataset pour recommandations
     dataset_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
@@ -487,12 +487,12 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
         
         # Mode rapide pour gros datasets
         if is_large_dataset:
-            fast_mode = st.checkbox("⚡ Mode rapide", value=True, key="comp_fast_mode")
+            fast_mode = st.checkbox(" Mode rapide", value=True, key="comp_fast_mode")
         else:
             fast_mode = False
     
     # Sélection des modèles
-    st.markdown("### 🎯 Sélection des Modèles")
+    st.markdown("###  Sélection des Modèles")
     
     comparator = ModelComparator(task=task)
     # option pour activer/désactiver le Target Encoding
@@ -509,19 +509,19 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     
     # Recommandation compacte pour gros datasets
     if dataset_size_mb > 5 or n_rows > 10000:
-        st.info(f"💡 Dataset volumineux ({n_rows:,} lignes, {dataset_size_mb:.1f} MB) - Sélectionnez 3-5 modèles pour éviter les timeouts")
+        st.info(f" Dataset volumineux ({n_rows:,} lignes, {dataset_size_mb:.1f} MB) - Sélectionnez 3-5 modèles pour éviter les timeouts")
         
         # Toggle pour voir les recommandations détaillées
-        if st.toggle("📋 Voir recommandations détaillées", key="show_recommendations"):
+        if st.toggle(" Voir recommandations détaillées", key="show_recommendations"):
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown("**⚡ Rapides (5-15s)**")
+                st.markdown("** Rapides (5-15s)**")
                 st.markdown("- Logistic/Linear\n- Decision Tree\n- KNN")
             with col2:
-                st.markdown("**🎯 Performants (30-60s)**")
+                st.markdown("** Performants (30-60s)**")
                 st.markdown("- Random Forest\n- Gradient Boosting\n- AdaBoost")
             with col3:
-                st.markdown("**🐌 Lents (60-120s)**")
+                st.markdown("** Lents (60-120s)**")
                 st.markdown("- SVM/SVR")
     
     # Initialiser selected_models dans session_state si nécessaire
@@ -539,7 +539,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             st.session_state.selected_models = available_models
             st.rerun()
     with col2:
-        if st.button("🚀 Modèles rapides"):
+        if st.button(" Modèles rapides"):
             # Utilisation de la fonction commune
             st.session_state.selected_models = model_utils.get_fast_models(task)
             st.rerun()
@@ -563,10 +563,10 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
         st.warning("⚠️ Veuillez sélectionner au moins un modèle")
         st.stop()
     
-    st.info(f"📊 {len(selected_models)} modèle(s) sélectionné(s)")
+    st.info(f" {len(selected_models)} modèle(s) sélectionné(s)")
     
     # Bouton de lancement
-    if st.button("🚀 Lancer la Comparaison", type="primary"):
+    if st.button(" Lancer la Comparaison", type="primary"):
         with st.spinner("Entraînement en cours..."):
             # Split des données
             X_train, X_test, y_train, y_test = train_test_split(
@@ -575,7 +575,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             
             # Afficher le mode utilisé
             if is_large_dataset and fast_mode:
-                st.info("⚡ Mode rapide activé : Random Forest (50 estimateurs), Gradient Boosting (50 estimateurs)")
+                st.info(" Mode rapide activé : Random Forest (50 estimateurs), Gradient Boosting (50 estimateurs)")
             
             # Comparaison
             results_df = comparator.compare_models(
@@ -589,7 +589,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             
             # Affichage des résultats
             st.markdown("---")
-            st.markdown("## 📊 Résultats de la Comparaison")
+            st.markdown("##  Résultats de la Comparaison")
             
             # Tableau des résultats
             st.dataframe(
@@ -602,12 +602,12 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             
             # Meilleur modèle
             if comparator.best_model:
-                st.success(f"🏆 **Meilleur modèle** : {comparator.best_model} (Score: {comparator.best_score:.4f})")
+                st.success(f" **Meilleur modèle** : {comparator.best_model} (Score: {comparator.best_score:.4f})")
             
             # Graphiques de comparaison
-            st.markdown("### 📈 Visualisations")
+            st.markdown("###  Visualisations")
             
-            tab1, tab2 = st.tabs(["📊 Comparaison", "🔥 Heatmap"])
+            tab1, tab2 = st.tabs([" Comparaison", " Heatmap"])
             
             with tab1:
                 fig = comparator.plot_comparison(results_df)
@@ -622,7 +622,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                     st.info("Pas assez de métriques pour créer une heatmap")
             
             # Export des résultats
-            st.markdown("### 💾 Export")
+            st.markdown("###  Export")
             
             col1, col2 = st.columns(2)
             
@@ -630,7 +630,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                 # Export CSV des résultats
                 csv = results_df.to_csv(index=False)
                 st.download_button(
-                    "📥 Télécharger les résultats (CSV)",
+                    " Télécharger les résultats (CSV)",
                     csv,
                     f"comparison_results_{target}.csv",
                     "text/csv"
@@ -638,7 +638,7 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             
             with col2:
                 # Sauvegarder le meilleur modèle
-                if st.button("💾 Sauvegarder le meilleur modèle"):
+                if st.button(" Sauvegarder le meilleur modèle"):
                     try:
                         model_path = comparator.save_best_model(target)
                         st.success(f"✅ Meilleur modèle sauvegardé : {model_path}")
@@ -675,3 +675,4 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
             }
     
     st.stop()
+
