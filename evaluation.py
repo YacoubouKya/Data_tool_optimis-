@@ -29,15 +29,15 @@ def run_evaluation(X_test, y_test):
     
     # Si les deux modèles sont disponibles, proposer un choix
     if refined_model is not None and best_model is not None and refined_model_name != best_model_name:
-        st.info("🎯 Vous avez affiné un modèle après la comparaison. Quel modèle souhaitez-vous évaluer ?")
+        st.info(" Vous avez affiné un modèle après la comparaison. Quel modèle souhaitez-vous évaluer ?")
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(f"🔧 **Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
+            if st.button(f" **Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
                 st.session_state["selected_eval_model"] = "refined"
         with col2:
             score_text = f" (Score: {best_model_score:.4f})" if best_model_score else ""
-            if st.button(f"🏆 **Meilleur modèle**\n{best_model_name}{score_text}", use_container_width=True):
+            if st.button(f" **Meilleur modèle**\n{best_model_name}{score_text}", use_container_width=True):
                 st.session_state["selected_eval_model"] = "best"
         
         # Déterminer le modèle sélectionné (par défaut: modèle affiné)
@@ -61,7 +61,7 @@ def run_evaluation(X_test, y_test):
         return
     
     # Afficher le modèle en cours d'évaluation
-    st.success(f"📊 **Modèle évalué** : {model_display_name}")
+    st.success(f" **Modèle évalué** : {model_display_name}")
     st.markdown("---")
     
     preds = model_to_evaluate.predict(X_test)
@@ -77,7 +77,7 @@ def run_evaluation(X_test, y_test):
         st.session_state["evaluation_metrics"] = metrics_df
         st.session_state["y_pred"] = preds
 
-        st.write("📊 Choisir graphiques :")
+        st.write(" Choisir graphiques :")
         show_cm = st.checkbox("Matrice de confusion", True)
         show_roc = st.checkbox("Courbe ROC", True)
         show_pr = st.checkbox("Courbe Précision-Rappel", False)
@@ -129,7 +129,7 @@ def run_evaluation(X_test, y_test):
         residuals = y_test - preds
         st.session_state["residuals"] = residuals
 
-        st.write("📊 Choisir graphiques :")
+        st.write(" Choisir graphiques :")
         show_scatter = st.checkbox("Prédit vs Réel", True)
         show_resid = st.checkbox("Résidus vs Prédit", True)
         show_hist = st.checkbox("Histogramme des résidus", True)
@@ -154,4 +154,5 @@ def run_evaluation(X_test, y_test):
         if show_qq:
             fig,ax=plt.subplots(figsize=(6,4))
             stats.probplot(residuals,dist="norm",plot=ax); ax.set_title("QQ-plot des résidus")
+
             st.pyplot(fig)
