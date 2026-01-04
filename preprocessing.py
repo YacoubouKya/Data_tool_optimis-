@@ -298,10 +298,10 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         st.error("❌ Module data_quality non disponible. Vérifiez que data_quality.py est présent.")
         return
     
-    st.subheader("📋 Prétraitement Basé sur Dictionnaire de Données")
+    st.subheader(" Prétraitement Basé sur Dictionnaire de Données")
     
     # Étape 1 : Charger le dictionnaire
-    st.markdown("### 1️⃣ Charger le Dictionnaire de Données")
+    st.markdown("###  Charger le Dictionnaire de Données")
     
     uploaded_dict = st.file_uploader(
         "Charger votre dictionnaire (Excel ou CSV)",
@@ -310,9 +310,9 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
     )
     
     if uploaded_dict is None:
-        st.info("ℹ️ Chargez un dictionnaire de données pour commencer")
+        st.info(" Chargez un dictionnaire de données pour commencer")
         st.markdown("---")
-        st.markdown("**📖 Format du dictionnaire requis :**")
+        st.markdown("** Format du dictionnaire requis :**")
         st.markdown("""
         **Colonnes requises** :
         - `Colonne` : Nom de la colonne
@@ -339,7 +339,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         st.success(f"✅ Dictionnaire chargé : {len(dictionnaire)} règles définies")
         
         # Étape 1.1 : Validation stricte du dictionnaire
-        st.markdown("#### 🔍 Validation du dictionnaire")
+        st.markdown("####  Validation du dictionnaire")
         
         from data_quality import validate_dictionnaire, normalize_dictionnaire
         
@@ -354,7 +354,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
             st.write(list(dictionnaire.columns))
             
             st.info("""
-            **📖 Consultez la documentation pour plus de détails :**
+            ** Consultez la documentation pour plus de détails :**
             - Format attendu pour chaque colonne
             - Exemples de valeurs valides
             - Règles de validation
@@ -366,13 +366,13 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
             st.success("✅ Dictionnaire valide !")
         
         # Étape 1.2 : Normalisation automatique
-        st.markdown("#### 🔧 Normalisation automatique")
+        st.markdown("####  Normalisation automatique")
         
         dictionnaire = normalize_dictionnaire(dictionnaire)
         st.success("✅ Dictionnaire normalisé (majuscules/minuscules, virgules/points, espaces)")
 
         # Aperçu complet du dictionnaire (sans expander)
-        st.markdown("#### 👁️ Aperçu du dictionnaire normalisé")
+        st.markdown("####  Aperçu du dictionnaire normalisé")
         st.dataframe(dictionnaire, use_container_width=True)
     
     except Exception as e:
@@ -382,7 +382,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         return
     
     # Étape 1.5 : Pré-validation et nettoyage des données
-    st.markdown("### 1️⃣.5 Pré-validation des Données")
+    st.markdown("###  Pré-validation des Données")
     
     # Analyse rapide des problèmes de qualité
     total_cells = df.shape[0] * df.shape[1]
@@ -403,7 +403,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         st.warning(f"⚠️ {len(cols_with_nan)} colonnes contiennent des valeurs manquantes")
         
         # Détail des valeurs manquantes affiché directement (sans expander)
-        st.markdown("#### 📊 Détail des valeurs manquantes par colonne")
+        st.markdown("####  Détail des valeurs manquantes par colonne")
         missing_df = pd.DataFrame({
             'Colonne': cols_with_nan,
             'NaN': [df[col].isna().sum() for col in cols_with_nan],
@@ -421,7 +421,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         )
         
         if pre_clean == "Oui, nettoyer automatiquement":
-            if st.button("🧹 Nettoyer Automatiquement", key="auto_clean"):
+            if st.button(" Nettoyer Automatiquement", key="auto_clean"):
                 with st.spinner("Nettoyage en cours..."):
                     df_cleaned = df.copy()
                     clean_log = []
@@ -456,20 +456,20 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
                     st.success(f"✅ Nettoyage terminé : {missing_cells} valeurs manquantes traitées")
                     
                     # Afficher le log directement
-                    st.markdown("**📝 Log du nettoyage :**")
+                    st.markdown("** Log du nettoyage :**")
                     st.dataframe(pd.DataFrame(clean_log), use_container_width=True)
         
         elif pre_clean == "Oui, choisir les actions":
-            st.info("💡 Utilisez l'onglet 'Prétraitement Standard' pour un nettoyage personnalisé, puis revenez ici.")
+            st.info(" Utilisez l'onglet 'Prétraitement Standard' pour un nettoyage personnalisé, puis revenez ici.")
     else:
         st.success("✅ Aucune valeur manquante détectée")
     
     st.markdown("---")
     
     # Étape 2 : Détecter les anomalies
-    st.markdown("### 2️⃣ Détecter les Anomalies")
+    st.markdown("###  Détecter les Anomalies")
     
-    if st.button("🔍 Lancer la Détection", key="detect_anomalies"):
+    if st.button(" Lancer la Détection", key="detect_anomalies"):
         with st.spinner("Détection en cours..."):
             try:
                 checker = DataQualityChecker(dictionnaire)
@@ -479,12 +479,12 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
                 st.session_state['quality_checker'] = checker
                 
                 if len(anomalies_df) == 0:
-                    st.success("🎉 Aucune anomalie détectée ! Vos données sont conformes au dictionnaire.")
+                    st.success(" Aucune anomalie détectée ! Vos données sont conformes au dictionnaire.")
                 else:
                     st.warning(f"⚠️ {len(anomalies_df)} anomalies détectées")
                     
                     # Statistiques par type
-                    st.markdown("**📊 Répartition par type d'anomalie**")
+                    st.markdown("** Répartition par type d'anomalie**")
                     anomalie_counts = anomalies_df['Anomalie'].value_counts()
                     col1, col2 = st.columns(2)
                     with col1:
@@ -493,7 +493,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
                         st.bar_chart(anomalie_counts)
                     
                     # Statistiques par colonne
-                    st.markdown("**📊 Répartition par colonne**")
+                    st.markdown("** Répartition par colonne**")
                     colonne_counts = anomalies_df['Colonne'].value_counts()
                     st.dataframe(colonne_counts)
                     
@@ -507,7 +507,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
     if 'anomalies_df' in st.session_state and len(st.session_state['anomalies_df']) > 0:
         anomalies_df = st.session_state['anomalies_df']
         
-        st.markdown("### 📋 Rapport d'Anomalies")
+        st.markdown("###  Rapport d'Anomalies")
         
         # Filtres
         col1, col2 = st.columns(2)
@@ -532,13 +532,13 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         st.dataframe(filtered_anomalies, use_container_width=True)
         
         # Télécharger le rapport
-        st.markdown("### 📥 Télécharger le Rapport d'Anomalies")
+        st.markdown("###  Télécharger le Rapport d'Anomalies")
         download_df(filtered_anomalies, "Télécharger rapport anomalies", "rapport_anomalies", "excel")
         
         # Étape 3 : Appliquer les corrections
-        st.markdown("### 3️⃣ Appliquer les Corrections")
+        st.markdown("###  Appliquer les Corrections")
         
-        st.info("ℹ️ Les corrections seront appliquées selon les actions définies dans le dictionnaire")
+        st.info(" Les corrections seront appliquées selon les actions définies dans le dictionnaire")
         
         if st.button("✅ Appliquer Toutes les Corrections", key="apply_corrections"):
             with st.spinner("Application des corrections..."):
@@ -558,11 +558,11 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
                     st.success(f"✅ Corrections appliquées ! {len(log_df)} modifications effectuées")
                     
                     # Afficher le log
-                    st.markdown("### 📝 Log des Corrections")
+                    st.markdown("###  Log des Corrections")
                     st.dataframe(log_df, use_container_width=True)
                     
                     # Statistiques de qualité
-                    st.markdown("### 📊 Statistiques de Qualité")
+                    st.markdown("###  Statistiques de Qualité")
                     stats = checker.get_quality_stats(df_corrected, anomalies_df)
                     
                     col1, col2, col3 = st.columns(3)
@@ -588,10 +588,11 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
         
         # Étape 4 : Télécharger les résultats
         if 'clean_data' in st.session_state and 'correction_log' in st.session_state:
-            st.markdown("### 4️⃣ Télécharger les Résultats")
+            st.markdown("###  Télécharger les Résultats")
             
             col1, col2 = st.columns(2)
             with col1:
-                download_df(st.session_state['clean_data'], "📥 Base corrigée", "base_corrigee", "excel")
+                download_df(st.session_state['clean_data'], " Base corrigée", "base_corrigee", "excel")
             with col2:
-                download_df(st.session_state['correction_log'], "📥 Log des corrections", "log_corrections", "excel")
+
+                download_df(st.session_state['correction_log'], " Log des corrections", "log_corrections", "excel")
