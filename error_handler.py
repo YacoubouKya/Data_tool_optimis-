@@ -59,13 +59,13 @@ def safe_execute(section_name):
                 # Ne pas afficher les erreurs techniques Streamlit à l'utilisateur
                 if "key=" not in error_text.lower() and "widget" not in error_text.lower():
                     st.markdown("---")
-                    st.markdown("**📋 Détails de l'erreur :**")
+                    st.markdown("** Détails de l'erreur :**")
                     st.code(error_text, language="text")
                     st.markdown("---")
                 
                 # Suggestions de solutions
                 st.warning("""
-                💡 **Solutions possibles :**
+                 **Solutions possibles :**
                 - Rechargez la page (appuyez sur F5)
                 - Vérifiez que vos données sont correctement chargées
                 - Vérifiez que toutes les étapes précédentes sont complètes
@@ -132,7 +132,7 @@ def show_error_dashboard():
     """
     if "error_log" in st.session_state and st.session_state["error_log"]:
         st.markdown("---")
-        st.markdown("### 🐛 Historique des erreurs (Debug)")
+        st.markdown("###  Historique des erreurs (Debug)")
         st.markdown(f"**Total d'erreurs enregistrées :** {len(st.session_state['error_log'])}")
         st.markdown("**10 dernières erreurs :**")
         
@@ -156,12 +156,12 @@ def safe_file_operation(operation_name):
                 return func(*args, **kwargs)
             except FileNotFoundError as e:
                 st.error(f"❌ Fichier non trouvé : {str(e)}")
-                st.info("💡 Vérifiez que le fichier existe et que le chemin est correct")
+                st.info(" Vérifiez que le fichier existe et que le chemin est correct")
                 logging.error(f"FileNotFoundError in {operation_name}: {str(e)}")
                 return None
             except PermissionError as e:
                 st.error(f"❌ Permission refusée : {str(e)}")
-                st.info("💡 Vérifiez que vous avez les droits d'accès au fichier")
+                st.info(" Vérifiez que vous avez les droits d'accès au fichier")
                 logging.error(f"PermissionError in {operation_name}: {str(e)}")
                 return None
             except Exception as e:
@@ -184,3 +184,4 @@ def initialize_error_handling():
     if "error_handling_initialized" not in st.session_state:
         st.session_state["error_handling_initialized"] = True
         logging.info("Error handling system initialized")
+
