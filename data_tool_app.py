@@ -7,7 +7,7 @@ from error_handler import safe_execute, initialize_error_handling
 from validators import validate_session_state, validate_dataframe
 
 # ------------------------
-# ⚙️ Configuration de la page
+# Configuration de la page
 # ------------------------
 st.set_page_config(
     page_title="Data Project Tool",
@@ -16,7 +16,7 @@ st.set_page_config(
 )
 st.caption("Développé par Yacoubou KOUMAI - © 2025 | v1.0.0")
 # ------------------------
-# 🎨 CSS personnalisé (V1)
+# CSS personnalisé (V1)
 # ------------------------
 st.markdown("""
 <style>
@@ -175,7 +175,7 @@ code, pre {
 # Injection HTML du header
 st.markdown("""
 <div class="custom-header">
-    <div class="logo">🐍 Data Project Tool</div>
+    <div class="logo"> Data Project Tool</div>
     <div class="menu">
         <a href="#">About</a>
         <a href="#">Documentation</a>
@@ -186,47 +186,47 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------
-# 🛡️ Initialisation de la gestion d'erreurs
+#  Initialisation de la gestion d'erreurs
 # ------------------------
 initialize_error_handling()
 
 # ------------------------
-# 🎯 En-tête principal
+#  En-tête principal
 # ------------------------
-st.title("📊 Data Project Tool")
-st.markdown("Bienvenue dans ton outil de projet data interactif 🚀")
+st.title(" Data Project Tool")
+st.markdown("Bienvenue dans ton outil de projet data interactif ")
 
 # ------------------------
-# 📌 Sidebar Navigation
+#  Sidebar Navigation
 # ------------------------
-st.sidebar.title("📌 Navigation")
+st.sidebar.title("Navigation")
 
 # Gérer la navigation automatique via session_state
 if "target_section" in st.session_state:
-    default_index = ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"].index(st.session_state.target_section)
+    default_index = [" Chargement", " EDA", " Prétraitement", " Comparaison de Modèles", " Affinage de Modèle", " Évaluation", " Reporting"].index(st.session_state.target_section)
     del st.session_state.target_section
 else:
     default_index = 0
 
 section = st.sidebar.radio(
     "Aller à :",
-    ["📥 Chargement", "🔎 EDA", "🛠️ Prétraitement", "🔬 Comparaison de Modèles", "🎯 Affinage de Modèle", "📈 Évaluation", "📝 Reporting"],
+    [" Chargement", " EDA", " Prétraitement", " Comparaison de Modèles", " Affinage de Modèle", " Évaluation", " Reporting"],
     index=default_index
 )
 
 # Messages d'aide dans la sidebar
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 💡 Guide Rapide")
-if section == "🔬 Comparaison de Modèles":
-    st.sidebar.info("⭐ **Commencez ici** pour explorer plusieurs modèles automatiquement")
-elif section == "🎯 Affinage de Modèle":
-    st.sidebar.info("🎯 **Optionnel** : Optimisez un modèle spécifique avec tuning fin")
-elif section == "📈 Évaluation":
-    st.sidebar.info("📊 Analysez votre modèle en détail après comparaison ou affinage")
+st.sidebar.markdown("###  Guide Rapide")
+if section == " Comparaison de Modèles":
+    st.sidebar.info(" **Commencez ici** pour explorer plusieurs modèles automatiquement")
+elif section == " Affinage de Modèle":
+    st.sidebar.info(" **Optionnel** : Optimisez un modèle spécifique avec tuning fin")
+elif section == " Évaluation":
+    st.sidebar.info(" Analysez votre modèle en détail après comparaison ou affinage")
 
 # Bouton de réinitialisation global
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔧 Utilitaires")
+st.sidebar.markdown("###  Utilitaires")
 if st.sidebar.button("🔄 Réinitialiser l'application", help="Efface toutes les données en mémoire et redémarre l'application"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
@@ -234,7 +234,7 @@ if st.sidebar.button("🔄 Réinitialiser l'application", help="Efface toutes le
     st.rerun()
 
 # ------------------------
-# 🛡️ Fonctions Wrappées pour Gestion d'Erreurs
+#  Fonctions Wrappées pour Gestion d'Erreurs
 # ------------------------
 
 @safe_execute("EDA - Analyse Exploratoire")
@@ -246,11 +246,11 @@ def run_eda_section():
 @safe_execute("Prétraitement des Données")
 def run_preprocessing_section(df, mode):
     """Exécute le prétraitement de manière sécurisée"""
-    if mode == "📊 Mode Automatique (Profiling)":
+    if mode == " Mode Automatique (Profiling)":
         profile = eda.generate_profile(df)
         issues = preprocessing.detect_and_propose_corrections(profile, df)
         if issues:
-            st.subheader("🚨 Anomalies détectées et corrections proposées")
+            st.subheader(" Anomalies détectées et corrections proposées")
             corrections_dict = {}
             for issue in issues:
                 col = issue["colonne"]
@@ -265,7 +265,7 @@ def run_preprocessing_section(df, mode):
                     st.session_state["clean_data"] = df_corrige
                     st.session_state["correction_log"] = log_df
                     st.success("✅ Toutes les corrections appliquées !")
-                    st.subheader("📋 Tableau récapitulatif des corrections")
+                    st.subheader(" Tableau récapitulatif des corrections")
                     st.dataframe(log_df)
                     preprocessing.download_df(df_corrige, label="Télécharger la base corrigée", file_name="base_corrigee", file_format="excel")
                     preprocessing.download_df(log_df, label="Télécharger le log des corrections", file_name="log_corrections", file_format="excel")
@@ -308,8 +308,8 @@ def run_reporting_section():
 # ------------------------
 # Sections
 # ------------------------
-if section == "📥 Chargement":
-    st.header("📥 Chargement des données")
+if section == " Chargement":
+    st.header(" Chargement des données")
     uploaded = st.file_uploader("Charger un fichier (CSV ou Excel)", type=["csv", "xlsx", "xls"])
     sep = ","; sheet = None
     if uploaded:
@@ -324,20 +324,20 @@ if section == "📥 Chargement":
             st.success("✅ Données chargées avec succès !")
             st.dataframe(df.head())
 
-elif section == "🔎 EDA":
-    st.header("🔎 Analyse exploratoire (EDA)")
+elif section == " EDA":
+    st.header(" Analyse exploratoire (EDA)")
     run_eda_section()
 
-elif section == "🛠️ Prétraitement":
-    st.header("🛠️ Prétraitement")
+elif section == " Prétraitement":
+    st.header(" Prétraitement")
     if "data" in st.session_state:
         df = st.session_state["data"]
         
         # Choix du mode de prétraitement
-        st.markdown("### 🎯 Choisir le Mode de Prétraitement")
+        st.markdown("###  Choisir le Mode de Prétraitement")
         mode = st.radio(
             "Mode",
-            ["📊 Mode Automatique (Profiling)", "📋 Mode Dictionnaire de Données"],
+            [" Mode Automatique (Profiling)", " Mode Dictionnaire de Données"],
             help="Mode Automatique : Détection basée sur ydata-profiling | Mode Dictionnaire : Validation basée sur vos règles métier"
         )
         
@@ -348,17 +348,17 @@ elif section == "🛠️ Prétraitement":
     else:
         st.warning("⚠️ Chargez d'abord les données.")
 
-elif section == "🎯 Affinage de Modèle":
-    st.header("🎯 Affinage de Modèle")
+elif section == " Affinage de Modèle":
+    st.header(" Affinage de Modèle")
     
     # Message d'orientation
     st.info("""
-    💡 **Quand utiliser cette section ?**
+     **Quand utiliser cette section ?**
     - Vous voulez configurer finement les hyperparamètres d'un modèle spécifique
     - Vous avez déjà identifié un modèle prometteur via la Comparaison
     - Vous voulez un contrôle total sur l'entraînement
     
-    ⭐ **Nouveau ?** Commencez plutôt par "🔬 Comparaison de Modèles" pour explorer rapidement !
+     **Nouveau ?** Commencez plutôt par " Comparaison de Modèles" pour explorer rapidement !
     """)
     
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
@@ -367,18 +367,18 @@ elif section == "🎯 Affinage de Modèle":
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
-elif section == "🔬 Comparaison de Modèles":
-    st.header("🔬 Comparaison de Modèles ML")
+elif section == " Comparaison de Modèles":
+    st.header(" Comparaison de Modèles ML")
     
     # Message d'accueil
     st.success("""
-    ⭐ **Point d'entrée recommandé pour la modélisation !**
+     **Point d'entrée recommandé pour la modélisation !**
     
     Cette section vous permet de :
-    - 🚀 Comparer 9-10 modèles automatiquement
-    - 📊 Identifier le meilleur modèle en quelques secondes
-    - 📈 Visualiser les performances côte à côte
-    - 💾 Exporter et sauvegarder les résultats
+    -  Comparer 9-10 modèles automatiquement
+    -  Identifier le meilleur modèle en quelques secondes
+    -  Visualiser les performances côte à côte
+    -  Exporter et sauvegarder les résultats
     """)
     
     df_to_use = st.session_state.get("clean_data", st.session_state.get("data"))
@@ -388,59 +388,60 @@ elif section == "🔬 Comparaison de Modèles":
         # Boutons de navigation après comparaison
         if "comparison_results" in st.session_state and "best_model" in st.session_state:
             st.markdown("---")
-            st.markdown("### 🎯 Prochaines Étapes Recommandées")
+            st.markdown("###  Prochaines Étapes Recommandées")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown("**📈 Analyser en détail**")
+                st.markdown("** Analyser en détail**")
                 st.write("Évaluez le meilleur modèle avec des graphiques détaillés")
-                if st.button("📈 Aller à l'Évaluation", key="goto_eval"):
-                    st.session_state.target_section = "📈 Évaluation"
+                if st.button(" Aller à l'Évaluation", key="goto_eval"):
+                    st.session_state.target_section = " Évaluation"
                     st.rerun()
             
             with col2:
-                st.markdown("**🎯 Optimiser davantage**")
+                st.markdown("** Optimiser davantage**")
                 st.write("Affinez les hyperparamètres du meilleur modèle")
-                if st.button("🎯 Aller à l'Affinage", key="goto_tuning"):
-                    st.session_state.target_section = "🎯 Affinage de Modèle"
+                if st.button(" Aller à l'Affinage", key="goto_tuning"):
+                    st.session_state.target_section = " Affinage de Modèle"
                     st.rerun()
             
             with col3:
-                st.markdown("**📝 Créer le rapport**")
+                st.markdown("** Créer le rapport**")
                 st.write("Générez un rapport HTML complet")
-                if st.button("📝 Aller au Reporting", key="goto_report"):
-                    st.session_state.target_section = "📝 Reporting"
+                if st.button(" Aller au Reporting", key="goto_report"):
+                    st.session_state.target_section = " Reporting"
                     st.rerun()
     else:
         st.warning("⚠️ Chargez et/ou prétraitez d'abord les données.")
 
-elif section == "📈 Évaluation":
-    st.header("📈 Évaluation du modèle")
+elif section == " Évaluation":
+    st.header(" Évaluation du modèle")
     
     if "model" in st.session_state or "best_model" in st.session_state:
         run_evaluation_section()
         
         # Bouton pour le reporting
         st.markdown("---")
-        st.markdown("### 🎯 Prochaine Étape")
-        if st.button("📝 Générer le Rapport Complet", type="primary"):
-            st.session_state.target_section = "📝 Reporting"
+        st.markdown("###  Prochaine Étape")
+        if st.button(" Générer le Rapport Complet", type="primary"):
+            st.session_state.target_section = " Reporting"
             st.rerun()
     else:
         st.warning("⚠️ Entraînez un modèle d'abord.")
         st.info("""
-        💡 **Comment obtenir un modèle à évaluer ?**
+         **Comment obtenir un modèle à évaluer ?**
         
-        **Option 1 (Recommandée)** : Allez dans "🔬 Comparaison de Modèles"
+        **Option 1 (Recommandée)** : Allez dans " Comparaison de Modèles"
         - Comparez plusieurs modèles automatiquement
         - Le meilleur sera automatiquement sélectionné
         
-        **Option 2** : Allez dans "🎯 Affinage de Modèle"
+        **Option 2** : Allez dans " Affinage de Modèle"
         - Configurez et entraînez un modèle spécifique
         """)
 
-elif section == "📝 Reporting":
-    st.header("📝 Reporting")
+elif section == " Reporting":
+    st.header(" Reporting")
     run_reporting_section()
+
 
