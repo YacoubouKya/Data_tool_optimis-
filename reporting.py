@@ -592,6 +592,7 @@ def generate_report(session_state: dict):
             html.append(f'<p><strong>Modèle :</strong> {model_name}</p>')
             html.append(f'<p><strong>Type de tâche :</strong> {task_type.capitalize()}</p>')
             html.append('<p style="margin-top:20px; color:#95a5a6;">Rapport généré automatiquement par Data Tool v2.2</p>')
+            html.append('<p style="margin-top:20px; color:#95a5a6;">Auteur  : Yacoubou KOUMAI</p>')
             html.append('</div>')
             
             html.append('</div>')  # Fermeture container
@@ -622,3 +623,4 @@ def generate_report(session_state: dict):
                     type="primary"
 
                 )
+
