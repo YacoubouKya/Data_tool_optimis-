@@ -22,25 +22,8 @@ def generate_profile(df: pd.DataFrame):
     # Calculer la taille du dataset
     dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
     n_rows = len(df)
-    
 
-        
-        # Profiling ultra-minimal pour gros datasets
-        profile = ProfileReport(
-            df,
-            title="Profiling EDA (Échantillon)",
-            minimal=True,
-            explorative=False,
-            correlations=None,
-            missing_diagrams=None,
-            interactions=None,
-            samples=None
-        )
-    else:
-        # Profiling minimal pour petits datasets
-        profile = ProfileReport(df, title="Profiling EDA", minimal=True)
-    
-    return profile
+    profile = ProfileReport(df, title="Profiling EDA", minimal=True)
 
 def run_eda(df: pd.DataFrame):
     st.subheader("Aperçu général")
@@ -135,3 +118,4 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
