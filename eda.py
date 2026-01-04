@@ -10,21 +10,8 @@ from ydata_profiling import ProfileReport
 
 @st.cache_data(show_spinner="Génération du profiling en cours...")
 def generate_profile(df: pd.DataFrame):
-    """
-    Génère un rapport de profiling avec ydata-profiling (avec cache).
-    Nécessite Python 3.11 (configuré via runtime.txt).
-    Le cache évite de recalculer le profiling si les données n'ont pas changé.
-    
-    Optimisé pour les gros datasets :
-    - Échantillonnage si >10000 lignes
-    - Profiling minimal pour éviter les timeouts
-    """
-    # Calculer la taille du dataset
-    dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
-    n_rows = len(df)
-
-    profile = ProfileReport(df, title="Profiling EDA", minimal=True)
-    
+    """Génère et retourne un objet ProfileReport (profiling automatique)."""
+    profile = ProfileReport(df, title="Profiling EDA", explorative=True)
     return profile
 
 
@@ -121,5 +108,6 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
 
 
