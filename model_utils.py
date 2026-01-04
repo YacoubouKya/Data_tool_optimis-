@@ -28,7 +28,7 @@ def validate_and_clean_target(y: pd.Series, target_name: str, silent: bool = Fal
         Tuple (y_cleaned, indices_to_keep)
     """
     if not silent:
-        st.markdown("### 🔍 Validation des Données")
+        st.markdown("###  Validation des Données")
     
     # Vérifier les valeurs manquantes
     y_missing = y.isna().sum()
@@ -110,7 +110,7 @@ def select_task_type_with_ui(y: pd.Series, key_suffix: str = "") -> str:
     default_index = 0 if auto_task == "classification" else 1
     
     task_choice = st.radio(
-        "🎯 Type de modélisation",
+        " Type de modélisation",
         options=["Classification", "Régression"],
         index=default_index,
         key=f"task_type_{key_suffix}",
@@ -388,11 +388,11 @@ def display_model_info(model_name: str, task: str):
     if model_name in model_descriptions:
         info = model_descriptions[model_name]
         st.markdown("---")
-        st.markdown(f"**ℹ️ À propos de {model_name}**")
+        st.markdown(f"** À propos de {model_name}**")
         st.markdown(f"**Description** : {info['description']}")
-        st.markdown(f"**✅ Avantages** : {info['pros']}")
-        st.markdown(f"**⚠️ Limitations** : {info['cons']}")
-        st.markdown(f"**🎯 Cas d'usage** : {info['use_case']}")
+        st.markdown(f"** Avantages** : {info['pros']}")
+        st.markdown(f"** Limitations** : {info['cons']}")
+        st.markdown(f"** Cas d'usage** : {info['use_case']}")
         st.markdown("---")
 
 
@@ -449,3 +449,4 @@ def extract_feature_importance(pipeline: Any, X: pd.DataFrame) -> Optional[pd.Se
         pass
     
     return None
+
