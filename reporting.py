@@ -318,28 +318,28 @@ def generate_report(session_state: dict):
     
     include_plots = st.checkbox("Inclure les visualisations détaillées", value=True)
     
-    if st.button("📄 Créer rapport HTML", type="primary"):
+    if st.button(" Créer rapport HTML", type="primary"):
         with st.spinner("Génération du rapport en cours..."):
             html = []
             html.append(f"<html><head><meta charset='utf-8'><title>{title}</title>")
             html.append(_get_modern_css())
             html.append("</head><body>")
             html.append('<div class="container">')
-            html.append(f"<h1>📊 {title}</h1>")
+            html.append(f"<h1> {title}</h1>")
             
             # Informations générales
             html.append('<div class="info-box">')
-            html.append(f'<p><strong>📅 Date de génération :</strong> {datetime.now().strftime("%d/%m/%Y à %H:%M:%S")}</p>')
+            html.append(f'<p><strong> Date de génération :</strong> {datetime.now().strftime("%d/%m/%Y à %H:%M:%S")}</p>')
             model_name = session_state.get("current_model_name", session_state.get("best_model_name", "Non spécifié"))
-            html.append(f'<p><strong>🤖 Modèle :</strong> {model_name}</p>')
+            html.append(f'<p><strong> Modèle :</strong> {model_name}</p>')
             task_type = session_state.get("task_type", session_state.get("task", "Non spécifié"))
-            html.append(f'<p><strong>🎯 Type de tâche :</strong> {task_type.capitalize()}</p>')
+            html.append(f'<p><strong> Type de tâche :</strong> {task_type.capitalize()}</p>')
             html.append('</div>')
 
             # 1. Données brutes
             if "Données" in report_sections and "data" in session_state:
                 df = session_state["data"]
-                html.append("<h2>📁 1. Données brutes</h2>")
+                html.append("<h2> 1. Données brutes</h2>")
                 
                 # Métriques clés
                 html.append('<div class="metric-box">')
@@ -358,10 +358,10 @@ def generate_report(session_state: dict):
                 html.append(f'<span class="metric-value">{missing_total:,}</span>')
                 html.append('</div>')
                 
-                html.append("<h3>📋 Aperçu des données (5 premières lignes)</h3>")
+                html.append("<h3> Aperçu des données (5 premières lignes)</h3>")
                 html.append(_wrap_table(df.head(5).to_html(index=False, classes='dataframe')))
                 
-                html.append("<h3>📊 Statistiques descriptives</h3>")
+                html.append("<h3> Statistiques descriptives</h3>")
                 html.append(_wrap_table(df.describe().round(3).to_html(classes='dataframe')))
                 
                 # Valeurs manquantes
@@ -380,7 +380,7 @@ def generate_report(session_state: dict):
                 if include_plots:
                     num_cols = df.select_dtypes(include='number').columns.tolist()
                     if len(num_cols) > 0:
-                        html.append("<h3>📈 Distributions des variables numériques</h3>")
+                        html.append("<h3> Distributions des variables numériques</h3>")
                         
                         # Créer une grille de subplots
                         n_cols_to_plot = min(6, len(num_cols))
@@ -404,7 +404,7 @@ def generate_report(session_state: dict):
             # 2. Prétraitement
             if "Prétraitement" in report_sections and "clean_data" in session_state:
                 cdf = session_state["clean_data"]
-                html.append("<h2>🔧 2. Prétraitement des données</h2>")
+                html.append("<h2> 2. Prétraitement des données</h2>")
                 
                 html.append('<div class="success-box">')
                 html.append(f'<p><strong>✅ Données nettoyées :</strong> {cdf.shape[0]} lignes × {cdf.shape[1]} colonnes</p>')
@@ -412,14 +412,14 @@ def generate_report(session_state: dict):
                     original_shape = session_state["data"].shape
                     rows_removed = original_shape[0] - cdf.shape[0]
                     if rows_removed > 0:
-                        html.append(f'<p><strong>🗑️ Lignes supprimées :</strong> {rows_removed} ({rows_removed/original_shape[0]*100:.1f}%)</p>')
+                        html.append(f'<p><strong> Lignes supprimées :</strong> {rows_removed} ({rows_removed/original_shape[0]*100:.1f}%)</p>')
                 html.append('</div>')
                 
                 if "correction_log" in session_state:
-                    html.append("<h3>📝 Log des corrections appliquées</h3>")
+                    html.append("<h3> Log des corrections appliquées</h3>")
                     html.append(session_state["correction_log"].to_html(index=False, classes='dataframe'))
                 
-                html.append("<h3>📋 Aperçu des données nettoyées</h3>")
+                html.append("<h3> Aperçu des données nettoyées</h3>")
                 html.append(_wrap_table(cdf.head(5).to_html(index=False, classes='dataframe')))
 
             # 3. Modèle
@@ -427,26 +427,26 @@ def generate_report(session_state: dict):
                 model_obj = session_state["model"]
                 model_display_name = session_state.get("current_model_name", session_state.get("best_model_name", "Modèle ML"))
                 
-                html.append("<h2>🤖 3. Modèle de Machine Learning</h2>")
+                html.append("<h2> 3. Modèle de Machine Learning</h2>")
                 
                 html.append('<div class="info-box">')
-                html.append(f'<p><strong>📌 Nom du modèle :</strong> {model_display_name}</p>')
-                html.append(f'<p><strong>🔧 Type de pipeline :</strong> {type(model_obj).__name__}</p>')
-                html.append(f'<p><strong>🎯 Tâche :</strong> {task_type.capitalize()}</p>')
+                html.append(f'<p><strong> Nom du modèle :</strong> {model_display_name}</p>')
+                html.append(f'<p><strong> Type de pipeline :</strong> {type(model_obj).__name__}</p>')
+                html.append(f'<p><strong> Tâche :</strong> {task_type.capitalize()}</p>')
                 html.append('</div>')
                 
                 if all(k in session_state for k in ("X_train","X_test","y_train","y_test")):
-                    html.append("<h3>📊 Dimensions des ensembles de données</h3>")
+                    html.append("<h3> Dimensions des ensembles de données</h3>")
                     html.append('<div class="grid-2">')
                     
                     html.append('<div class="card">')
-                    html.append('<h4>🎓 Ensemble d\'entraînement</h4>')
+                    html.append('<h4> Ensemble d\'entraînement</h4>')
                     html.append(f'<p><strong>Features (X_train) :</strong> {session_state["X_train"].shape[0]} × {session_state["X_train"].shape[1]}</p>')
                     html.append(f'<p><strong>Cible (y_train) :</strong> {session_state["y_train"].shape[0]} valeurs</p>')
                     html.append('</div>')
                     
                     html.append('<div class="card">')
-                    html.append('<h4>🧪 Ensemble de test</h4>')
+                    html.append('<h4> Ensemble de test</h4>')
                     html.append(f'<p><strong>Features (X_test) :</strong> {session_state["X_test"].shape[0]} × {session_state["X_test"].shape[1]}</p>')
                     html.append(f'<p><strong>Cible (y_test) :</strong> {session_state["y_test"].shape[0]} valeurs</p>')
                     html.append('</div>')
@@ -456,7 +456,7 @@ def generate_report(session_state: dict):
                 # Feature importance
                 if "feature_importance" in session_state:
                     fi = session_state["feature_importance"]
-                    html.append("<h3>🎯 Importance des features</h3>")
+                    html.append("<h3> Importance des features</h3>")
                     
                     # Limiter au Top 10 pour la compacité
                     fi_top = fi.head(10)
@@ -468,7 +468,7 @@ def generate_report(session_state: dict):
                         'Importance (%)': (fi_top.values / fi_top.sum() * 100).round(2)
                     })
                     
-                    html.append("<h4>📊 Top 10 des features les plus importantes</h4>")
+                    html.append("<h4> Top 10 des features les plus importantes</h4>")
                     html.append(fi_df.to_html(index=False, classes='dataframe'))
                     
                     # Graphique compact uniquement si visualisations activées
@@ -504,7 +504,7 @@ def generate_report(session_state: dict):
 
             # 4. Évaluation
             if "Évaluation" in report_sections and "evaluation_metrics" in session_state:
-                html.append("<h2>📈 4. Évaluation des performances</h2>")
+                html.append("<h2> 4. Évaluation des performances</h2>")
                 
                 em = session_state["evaluation_metrics"]
                 try:
@@ -512,12 +512,12 @@ def generate_report(session_state: dict):
                 except:
                     em_display = em
                 
-                html.append("<h3>🎯 Métriques de performance</h3>")
+                html.append("<h3> Métriques de performance</h3>")
                 html.append(em_display.to_html(index=False, classes='dataframe'))
                 
                 # Visualisations d'évaluation
                 if "Visualisations" in report_sections and include_plots:
-                    html.append("<h3>📊 Visualisations des performances</h3>")
+                    html.append("<h3> Visualisations des performances</h3>")
                     
                     if "y_pred" in session_state and "y_test" in session_state:
                         y_test = session_state["y_test"]
@@ -583,7 +583,7 @@ def generate_report(session_state: dict):
 
             # Footer
             html.append('<div class="footer">')
-            html.append('<h3>📋 Résumé du rapport</h3>')
+            html.append('<h3> Résumé du rapport</h3>')
             html.append(f'<p><strong>Date de génération :</strong> {datetime.now().strftime("%d/%m/%Y à %H:%M:%S")}</p>')
             if "data" in session_state:
                 html.append(f'<p><strong>Dataset initial :</strong> {session_state["data"].shape[0]:,} lignes × {session_state["data"].shape[1]} colonnes</p>')
@@ -607,7 +607,7 @@ def generate_report(session_state: dict):
             st.success(f"✅ Rapport généré avec succès !")
 
             # Aperçu du rapport (sans expander)
-            st.markdown("#### 📄 Aperçu du rapport généré")
+            st.markdown("####  Aperçu du rapport généré")
             st.info(f"**Chemin :** `{out_path}`")
             st.info(f"**Taille :** {os.path.getsize(out_path) / 1024:.1f} KB")
             st.info(f"**Sections incluses :** {', '.join(report_sections)}")
@@ -615,9 +615,10 @@ def generate_report(session_state: dict):
             # Bouton de téléchargement
             with open(out_path, "rb") as f:
                 st.download_button(
-                    label="📥 Télécharger le rapport HTML",
+                    label=" Télécharger le rapport HTML",
                     data=f,
                     file_name=f"{safe_title}.html",
                     mime="text/html",
                     type="primary"
+
                 )
