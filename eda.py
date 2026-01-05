@@ -70,6 +70,7 @@ def run_eda(df: pd.DataFrame):
             to_plot = [col_choice]
 
         for col in to_plot:
+            plt.figure(figsize=(8, 8))
             fig, ax = plt.subplots()
             sns.histplot(df[col].dropna(), kde=True, ax=ax)
             ax.set_title(f"Histogramme de {col}")
@@ -108,6 +109,7 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
 
 
 
