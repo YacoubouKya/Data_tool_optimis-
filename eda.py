@@ -70,8 +70,7 @@ def run_eda(df: pd.DataFrame):
             to_plot = [col_choice]
 
         for col in to_plot:
-            plt.figure(figsize=(8, 8))
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(6, 6))
             sns.histplot(df[col].dropna(), kde=True, ax=ax)
             ax.set_title(f"Histogramme de {col}")
             st.pyplot(fig)
@@ -104,11 +103,12 @@ def run_eda(df: pd.DataFrame):
             corr = df.corr(numeric_only=True)
             # arrondir pour lisibilité
             corr_display = corr.round(3)
-            fig, ax = plt.subplots(figsize=(8, 6))
+            fig, ax = plt.subplots(figsize=(6, 6))
             sns.heatmap(corr_display, annot=True, cmap="coolwarm", center=0, ax=ax)
             st.pyplot(fig)
 
             plt.close(fig)
+
 
 
 
