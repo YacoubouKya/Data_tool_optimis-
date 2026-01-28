@@ -272,10 +272,10 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
         st.error("❌ Aucune donnée disponible pour l'analyse")
         return
     
-    st.markdown("## 🔍 Analyse Exploratoire Approfondie")
+    st.markdown("## Analyse Exploratoire Approfondie")
     
     # Profil des données
-    st.markdown("#### 📊 Profil des données")
+    st.markdown("#### Profil des données")
     profile = generate_data_profile(df)
     
     col1, col2, col3, col4 = st.columns(4)
@@ -293,7 +293,7 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
     var_types = detect_variable_types(df)
     
     # Analyse bivariée
-    st.markdown("### 📈 Analyse Bivariée")
+    st.markdown("### Analyse Bivariée")
     
     # Sélection des variables
     col1, col2 = st.columns(2)
@@ -322,20 +322,20 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
     
     # Indicateurs actuariels
     if var_types['numerical']:
-        st.markdown("### 📊 Indicateurs Actuariels")
+        st.markdown("### Indicateurs Actuariels")
         
-        st.markdown("##### 📈 Statistiques descriptives avancées")
+        st.markdown("##### Statistiques descriptives avancées")
         indicators_df = calculate_actuarial_indicators(df, var_types['numerical'])
         st.dataframe(indicators_df, use_container_width=True)
         
-        st.markdown("##### 🎯 Détection d'outliers")
+        st.markdown("##### Détection d'outliers")
         outliers_results = detect_outliers_methods(df, var_types['numerical'])
         
         for var, outliers_df in outliers_results.items():
             st.write(f"**{var}**")
             st.dataframe(outliers_df, use_container_width=True)
         
-        st.markdown("##### 🔗 Matrice de corrélation")
+        st.markdown("##### Matrice de corrélation")
         if len(var_types['numerical']) > 1:
             corr_fig = correlation_analysis(df, var_types['numerical'])
             st.plotly_chart(corr_fig, use_container_width=True)
@@ -348,3 +348,4 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
 if __name__ == "__main__":
     # Test du module
     pass
+
