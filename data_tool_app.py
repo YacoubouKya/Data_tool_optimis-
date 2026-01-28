@@ -194,7 +194,7 @@ initialize_error_handling()
 # 🎯 En-tête principal
 # ------------------------
 
-st.markdoown("Développé par Yacoubou KOUMAI v2025")
+st.markdown("Développé par Yacoubou KOUMAI v2025")
 st.title("Data Project Tool")
 st.markdown("Bienvenue dans ton outil de projet data interactif ")
 
@@ -483,5 +483,6 @@ elif section == "Évaluation":
 elif section == "Reporting":
     st.header("Reporting")
     run_reporting_section()
+
 
 
