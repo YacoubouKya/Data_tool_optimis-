@@ -103,18 +103,32 @@ def quali_vs_quanti_analysis(df: pd.DataFrame, var_quali: str, var_quanti: str) 
     return fig
 
 
-def quanti_vs_quanti_analysis(df: pd.DataFrame, var1: str, var2: str) -> go.Figure:
-    """Analyse bivariée quantitative vs quantitative."""
+def quanti_vs_quanti_analysis(df: pd.DataFrame, var1: str, var2: str, method: str = "pearson") -> go.Figure:
+    """
+    Analyse bivariée quantitative vs quantitative avec choix de méthode de corrélation.
     
-    # Calculer la corrélation
-    corr = df[var1].corr(df[var2])
+    Args:
+        df: DataFrame contenant les données
+        var1: Première variable quantitative
+        var2: Deuxième variable quantitative  
+        method: Méthode de corrélation ('pearson', 'spearman', 'kendall')
+    """
+    # Calculer la corrélation avec la méthode choisie
+    corr = df[var1].corr(df[var2], method=method)
+    
+    # Informations sur la méthode pour le titre
+    method_info = {
+        "pearson": "Pearson",
+        "spearman": "Spearman", 
+        "kendall": "Kendall"
+    }
     
     # Scatter plot avec droite de régression
     fig = px.scatter(
         df, 
         x=var1, 
         y=var2,
-        title=f"Analyse : {var1} vs {var2} (corrélation: {corr:.3f})",
+        title=f"Analyse : {var1} vs {var2} ({method_info[method]}: {corr:.3f})",
         trendline="ols"
     )
     
@@ -218,18 +232,31 @@ def detect_outliers_methods(df: pd.DataFrame, numerical_vars: List[str]) -> Dict
     return outliers_results
 
 
-def correlation_analysis(df: pd.DataFrame, numerical_vars: List[str]) -> go.Figure:
-    """Matrice de corrélation avec significativité."""
+def correlation_analysis(df: pd.DataFrame, numerical_vars: List[str], method: str = "pearson") -> go.Figure:
+    """
+    Matrice de corrélation avec choix de méthode et significativité.
     
-    # Matrice de corrélation
-    corr_matrix = df[numerical_vars].corr()
+    Args:
+        df: DataFrame contenant les données
+        numerical_vars: Liste des variables numériques à analyser
+        method: Méthode de corrélation ('pearson', 'spearman', 'kendall')
+    """
+    # Matrice de corrélation avec la méthode choisie
+    corr_matrix = df[numerical_vars].corr(method=method)
+    
+    # Informations sur la méthode pour le titre
+    method_info = {
+        "pearson": "Pearson (linéaire)",
+        "spearman": "Spearman (monotone)", 
+        "kendall": "Kendall (robuste)"
+    }
     
     # Heatmap avec masque pour la diagonale
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
     
     fig = px.imshow(
         corr_matrix,
-        title="Matrice de corrélation",
+        title=f"Matrice de corrélation - {method_info[method]}",
         color_continuous_scale="RdBu_r",
         aspect="auto",
         range_color=[-1, 1]
@@ -337,7 +364,28 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
         
         st.markdown("##### Matrice de corrélation")
         if len(var_types['numerical']) > 1:
-            corr_fig = correlation_analysis(df, var_types['numerical'])
+            # Choix de la méthode de corrélation
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                corr_method = st.selectbox(
+                    "Méthode de corrélation :",
+                    ["pearson", "spearman", "kendall"],
+                    key="corr_method_advanced",
+                    help="• Pearson : Relations linéaires\n• Spearman : Relations monotones\n• Kendall : Robuste aux outliers"
+                )
+            with col2:
+                st.info("📊 Analyse avancée")
+            
+            # Afficher des informations sur la méthode choisie
+            method_descriptions = {
+                "pearson": "📈 **Pearson** : Détecte les relations linéaires. Idéal pour données normalement distribuées.",
+                "spearman": "📊 **Spearman** : Détecte les relations monotones (non-linéaires). Robuste aux outliers.",
+                "kendall": "🎯 **Kendall** : Basé sur les rangs. Très robuste, idéal pour petits échantillons."
+            }
+            
+            st.caption(method_descriptions[corr_method])
+            
+            corr_fig = correlation_analysis(df, var_types['numerical'], method=corr_method)
             st.plotly_chart(corr_fig, use_container_width=True)
         else:
             st.info("Besoin d'au moins 2 variables numériques pour la matrice de corrélation")

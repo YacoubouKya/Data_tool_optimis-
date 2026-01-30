@@ -382,7 +382,7 @@ elif section == "Analyse Exploratoire":
     run_exploratory_section()
     
     # Bouton de navigation vers la modélisation
-    if st.session_state.get("clean_data") or st.session_state.get("data"):
+    if st.session_state.get("clean_data") is not None or st.session_state.get("data") is not None:
         st.markdown("---")
         st.markdown("###  Prochaine Étape")
         if st.button(" Passer à la Comparaison de Modèles", type="primary"):
