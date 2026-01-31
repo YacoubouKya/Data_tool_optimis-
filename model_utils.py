@@ -336,6 +336,42 @@ def format_metrics(d: dict, decimals: int = 3) -> dict:
     return out
 
 
+def get_available_models(task: str) -> list:
+    """
+    Retourne la liste de tous les modèles disponibles pour une tâche
+    
+    Args:
+        task: Type de tâche ("classification" ou "regression")
+        
+    Returns:
+        Liste des noms de modèles disponibles
+    """
+    if task == "classification":
+        return [
+            "Random Forest",
+            "Gradient Boosting", 
+            "Logistic Regression",
+            "Decision Tree",
+            "AdaBoost",
+            "Extra Trees",
+            "SVM",
+            "KNN",
+            "Naive Bayes"
+        ]
+    else:  # regression
+        return [
+            "Random Forest",
+            "Gradient Boosting",
+            "Linear Regression", 
+            "Ridge",
+            "Lasso",
+            "ElasticNet",
+            "SVR",
+            "KNN",
+            "Decision Tree"
+        ]
+
+
 def get_fast_models(task: str) -> list:
     """
     Retourne la liste des modèles rapides pour un démarrage rapide
