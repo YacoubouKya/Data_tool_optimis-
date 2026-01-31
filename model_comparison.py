@@ -527,6 +527,13 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
         else:
             st.session_state.selected_models = ["Random Forest", "Gradient Boosting"]
     
+    # Nettoyer la sélection pour ne garder que les modèles disponibles
+    available_models = model_utils.get_available_models(task)
+    st.session_state.selected_models = [
+        model for model in st.session_state.selected_models 
+        if model in available_models
+    ]
+    
     # Options de sélection rapide
     col1, col2, col3 = st.columns(3)
     with col1:

@@ -82,8 +82,29 @@ def run_evaluation(X_test, y_test):
     
     preds = model_to_evaluate.predict(X_test)
 
-    # Détection automatique du type
-    is_classification = y_test.dtype == "object" or y_test.nunique() < 20
+    # Détection améliorée du type de problème
+    # Vérifier d'abord si y_test est de type object (classification)
+    if y_test.dtype == "object":
+        is_classification = True
+    # Sinon, vérifier si c'est numérique avec peu de valeurs uniques
+    elif pd.api.types.is_numeric_dtype(y_test):
+        unique_count = y_test.nunique()
+        # Si moins de 20 valeurs uniques ET que ce sont des entiers, c probablement de la classification
+        is_classification = unique_count < 20 and all(y_test.dropna() % 1 == 0)
+    else:
+        is_classification = False
+
+    # Validation silencieuse du type (sans affichage de debug)
+    if is_classification:
+        # Validation supplémentaire pour la classification
+        if not (y_test.dtype == "object" or (pd.api.types.is_numeric_dtype(y_test) and all(y_test.dropna() % 1 == 0))):
+            # Forcer en régression si les données ne sont pas appropriées pour la classification
+            is_classification = False
+    else:
+        # Validation pour la régression
+        if not pd.api.types.is_numeric_dtype(y_test):
+            # Forcer en classification si les données ne sont pas numériques
+            is_classification = True
 
     if is_classification:
         st.write("Classification — métriques :")

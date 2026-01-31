@@ -326,103 +326,83 @@ def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
             except Exception as e:
                 st.warning(f"⚠️ Erreur lors du calcul des probabilités : {str(e)}")
         
-        # Onglets pour les différentes analyses
-        tabs = ["📊 Déciles", "📈 Learning Curves", "🎯 SHAP", "📋 Calibration"]
-        if task_type != "classification":
-            tabs.remove("📋 Calibration")
+        # SECTION 1: Analyse par déciles (automatique)
+        st.markdown("### 📊 Analyse par Déciles")
+        decile_analysis(y_test, y_pred, y_pred_proba, task_type)
         
-        selected_tab = st.tabs(tabs)
+        st.markdown("---")
         
-        # Analyse par déciles
-        with selected_tab[0]:
-            decile_analysis(y_test, y_pred, y_pred_proba, task_type)
+        # SECTION 2: Analyses avancées avec boutons séparés
+        st.markdown("### 🔬 Analyses Avancées")
         
-        # Learning curves
-        with selected_tab[1]:
-            st.write("📈 **Analyse des Learning Curves**")
-            st.info("💡 Les learning curves aident à détecter l'overfitting et l'underfitting")
-            
-            # Utiliser un formulaire pour forcer l'exécution
-            with st.form("learning_curves_form"):
-                st.write("**Configuration :**")
-                cv_value = st.slider("Nombre de folds (CV)", min_value=3, max_value=10, value=5, key="cv_slider")
-                
-                submitted = st.form_submit_button("🚀 Générer les Learning Curves")
-                
-                if submitted:
-                    with st.spinner("📈 Calcul des learning curves en cours..."):
-                        try:
-                            # Récupérer les données d'entraînement depuis session_state
-                            X_train = st.session_state.get("X_train", X_test)
-                            y_train = st.session_state.get("y_train", y_test)
-                            
-                            # Validation des données
-                            if X_train is None or y_train is None:
-                                st.error("❌ Données d'entraînement non disponibles")
-                            else:
-                                st.write("**Données utilisées :**")
-                                st.write(f"- X_train shape: {X_train.shape}")
-                                st.write(f"- y_train shape: {y_train.shape}")
-                                st.write(f"- CV folds: {cv_value}")
-                                
-                                learning_curve_analysis(model, X_train, y_train, cv=cv_value)
-                                st.success("✅ **Learning Curves générées avec succès !**")
-                                
-                        except Exception as e:
-                            st.error(f"❌ Erreur lors de la génération des learning curves : {str(e)}")
-                            st.code(f"Erreur détaillée: {str(e)}")
+        col1, col2 = st.columns(2)
         
-        # SHAP
-        with selected_tab[2]:
-            st.write("🎯 **Analyse SHAP (SHapley Additive exPlanations)**")
-            st.info("💡 SHAP explique l'impact de chaque feature sur les prédictions du modèle")
-            
-            # Vérifier si SHAP est disponible
-            if not SHAP_AVAILABLE:
-                st.warning("⚠️ SHAP n'est pas installé. Installez-le avec : `pip install shap`")
-                st.code("pip install shap")
+        with col1:
+            if st.button("📈 Learning Curves", type="primary", use_container_width=True):
+                st.session_state["show_learning_curves"] = True
+                st.session_state["show_shap"] = False
+                st.rerun()
+        
+        with col2:
+            if SHAP_AVAILABLE:
+                if st.button("🎯 Analyse SHAP", type="primary", use_container_width=True):
+                    st.session_state["show_shap"] = True
+                    st.session_state["show_learning_curves"] = False
+                    st.rerun()
             else:
-                # Utiliser un formulaire pour forcer l'exécution
-                with st.form("shap_form"):
-                    st.write("**Configuration :**")
-                    max_display = st.slider("Nombre de features à afficher", min_value=5, max_value=50, value=20, key="shap_slider")
-                    use_background = st.checkbox("Utiliser dataset d'entraînement comme background", value=True, key="shap_bg")
-                    
-                    submitted = st.form_submit_button("🔍 Analyser avec SHAP")
-                    
-                    if submitted:
-                        with st.spinner("🔍 Analyse SHAP en cours..."):
-                            try:
-                                # Récupérer les noms de features si disponibles
-                                feature_names = None
-                                if hasattr(X_test, 'columns'):
-                                    feature_names = X_test.columns.tolist()
-                                
-                                # Préparer les données background
-                                background_data = None
-                                if use_background:
-                                    background_data = st.session_state.get("X_train", X_test)
-                                
-                                st.write("**Informations :**")
-                                st.write(f"- X_test shape: {X_test.shape}")
-                                st.write(f"- Features: {len(feature_names) if feature_names else 'Inconnues'}")
-                                st.write(f"- Max display: {max_display}")
-                                st.write(f"- Background data: {'Oui' if background_data is not None else 'Non'}")
-                                
-                                shap_analysis(model, X_test, feature_names, max_display)
-                                st.success("✅ **Analyse SHAP terminée avec succès !**")
-                                
-                            except Exception as e:
-                                st.error(f"❌ Erreur lors de l'analyse SHAP : {str(e)}")
-                                st.code(f"Erreur détaillée: {str(e)}")
+                st.warning("⚠️ SHAP non installé")
         
-        # Calibration (classification seulement)
-        if task_type == "classification" and len(selected_tab) > 3:
-            with selected_tab[3]:
-                if y_pred_proba is not None:
-                    calibration_plot(y_test, y_pred_proba)
-                else:
-                    st.warning("⚠️ Le modèle ne fournit pas de probabilités")
+        # SECTION 3: Affichage des résultats
+        if st.session_state.get("show_learning_curves", False):
+            st.markdown("---")
+            st.markdown("### 📈 Learning Curves")
+            
+            with st.spinner("📈 Calcul en cours..."):
+                try:
+                    X_train = st.session_state.get("X_train", X_test)
+                    y_train = st.session_state.get("y_train", y_test)
+                    
+                    if X_train is None or y_train is None:
+                        st.error("❌ Données non disponibles")
+                    else:
+                        learning_curve_analysis(model, X_train, y_train, cv=5)
+                        st.success("✅ Learning Curves générées !")
+                        
+                except Exception as e:
+                    st.error(f"❌ Erreur: {str(e)}")
+            
+            if st.button("❌ Fermer"):
+                st.session_state["show_learning_curves"] = False
+                st.rerun()
+        
+        if st.session_state.get("show_shap", False):
+            st.markdown("---")
+            st.markdown("### 🎯 Analyse SHAP")
+            
+            with st.spinner("🔍 Analyse en cours..."):
+                try:
+                    feature_names = None
+                    if hasattr(X_test, 'columns'):
+                        feature_names = X_test.columns.tolist()
+                    
+                    shap_analysis(model, X_test, feature_names, max_display=20)
+                    st.success("✅ Analyse SHAP terminée !")
+                    
+                except Exception as e:
+                    st.error(f"❌ Erreur: {str(e)}")
+            
+            if st.button("❌ Fermer"):
+                st.session_state["show_shap"] = False
+                st.rerun()
+        
+        # SECTION 4: Calibration (classification)
+        if task_type == "classification":
+            st.markdown("---")
+            st.markdown("### 📋 Courbe de Calibration")
+            if y_pred_proba is not None:
+                calibration_plot(y_test, y_pred_proba)
+            else:
+                st.warning("⚠️ Probabilités non disponibles")
     
     except Exception as e:
         st.error(f"❌ Erreur générale dans l'évaluation avancée : {str(e)}")
