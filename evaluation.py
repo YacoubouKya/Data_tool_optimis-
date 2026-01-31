@@ -28,42 +28,55 @@ def run_evaluation(X_test, y_test):
     model_to_evaluate = None
     model_display_name = None
     
-    # Si les deux modèles sont disponibles, proposer un choix
-    if refined_model is not None and best_model is not None and refined_model_name != best_model_name:
-        st.info("🎯 Vous avez affiné un modèle après la comparaison. Quel modèle souhaitez-vous évaluer ?")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(f"🔧 **Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
-                st.session_state["selected_eval_model"] = "refined"
-        with col2:
-            score_text = f" (Score: {best_model_score:.4f})" if best_model_score else ""
-            if st.button(f"🏆 **Meilleur modèle**\n{best_model_name}{score_text}", use_container_width=True):
-                st.session_state["selected_eval_model"] = "best"
-        
-        # Déterminer le modèle sélectionné (par défaut: modèle affiné)
-        selected = st.session_state.get("selected_eval_model", "refined")
-        if selected == "refined":
-            model_to_evaluate = refined_model
-            model_display_name = refined_model_name
-        else:
-            model_to_evaluate = best_model
-            model_display_name = best_model_name
+    # Debug : Afficher ce qui est disponible en session state
+    if st.checkbox("🔍 Debug - Voir les modèles disponibles"):
+        st.write("**Session state des modèles :**")
+        st.write(f"- refined_model (model): {'✅ Disponible' if refined_model else '❌ Non disponible'}")
+        st.write(f"- best_model: {'✅ Disponible' if best_model else '❌ Non disponible'}")
+        st.write(f"- refined_model_name: {refined_model_name}")
+        st.write(f"- best_model_name: {best_model_name}")
+        st.write(f"- best_model_score: {best_model_score}")
     
-    # Sinon, utiliser le modèle disponible
+    # Logique améliorée de sélection du modèle
+    if best_model is not None:
+        # Si on a un best_model (venant de la comparaison), c'est le modèle principal
+        if refined_model is not None and refined_model_name != best_model_name:
+            # Cas : l'utilisateur a fait une comparaison puis un affinage
+            st.info("🎯 Vous avez affiné un modèle après la comparaison. Quel modèle souhaitez-vous évaluer ?")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(f"🔧 **Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
+                    st.session_state["selected_eval_model"] = "refined"
+            with col2:
+                score_text = f" (Score: {best_model_score:.4f})" if best_model_score else ""
+                if st.button(f"🏆 **Meilleur modèle de la comparaison**\n{best_model_name}{score_text}", use_container_width=True):
+                    st.session_state["selected_eval_model"] = "best"
+            
+            # Déterminer le modèle sélectionné
+            selected = st.session_state.get("selected_eval_model", "best")  # Par défaut: best_model
+            if selected == "refined":
+                model_to_evaluate = refined_model
+                model_display_name = refined_model_name
+            else:
+                model_to_evaluate = best_model
+                model_display_name = best_model_name
+        else:
+            # Cas : seulement le best_model disponible (après comparaison)
+            model_to_evaluate = best_model
+            model_display_name = best_model_name or "Meilleur modèle"
+            st.success(f"📊 **Modèle évalué** : {model_display_name}")
+    
     elif refined_model is not None:
+        # Cas : seulement un modèle affiné (sans comparaison préalable)
         model_to_evaluate = refined_model
         model_display_name = refined_model_name or "Modèle affiné"
-    elif best_model is not None:
-        model_to_evaluate = best_model
-        model_display_name = best_model_name or "Meilleur modèle"
+        st.success(f"📊 **Modèle évalué** : {model_display_name}")
+    
     else:
         st.error("❌ Aucun modèle disponible pour l'évaluation.")
+        st.info("💡 **Solution** : Entraînez d'abord un modèle via la comparaison ou l'affinage.")
         return
-    
-    # Afficher le modèle en cours d'évaluation
-    st.success(f"📊 **Modèle évalué** : {model_display_name}")
-    st.markdown("---")
     
     preds = model_to_evaluate.predict(X_test)
 
