@@ -74,121 +74,155 @@ def shap_analysis(model, X_test, feature_names=None, max_display=20):
 def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification"):
     """Analyse par déciles des performances du modèle"""
     
-    if task_type == "classification" and y_pred_proba is not None:
-        # Classification : analyser par déciles de probabilité
-        df_analysis = pd.DataFrame({
-            'true': y_true,
-            'pred_proba': y_pred_proba,
-            'pred': y_pred
-        })
-        
-        # Découper en déciles
-        df_analysis['decile'] = pd.qcut(df_analysis['pred_proba'], 10, labels=False, duplicates='drop')
-        
-        # Calculer les métriques par décile
-        decile_stats = df_analysis.groupby('decile').agg({
-            'true': ['count', 'sum', 'mean'],
-            'pred_proba': ['mean', 'min', 'max']
-        }).round(4)
-        
-        decile_stats.columns = ['Nb_observations', 'Nb_positifs', 'Taux_positif_reel', 
-                               'Probabilite_moyenne', 'Prob_min', 'Prob_max']
-        
-        st.subheader("📊 Analyse par Déciles (Classification)")
-        st.dataframe(decile_stats, use_container_width=True)
-        
-        # Visualisation
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=("Distribution par décile", "Taux de positifs par décile",
-                          "Probabilités moyennes", "Effectifs par décile"),
-            specs=[[{"type": "bar"}, {"type": "scatter"}],
-                   [{"type": "bar"}, {"type": "bar"}]]
-        )
-        
-        # Effectifs par décile
-        fig.add_trace(
-            go.Bar(x=decile_stats.index, y=decile_stats['Nb_observations'], 
-                   name="Effectifs", marker_color='lightblue'),
-            row=1, col=1
-        )
-        
-        # Taux de positifs
-        fig.add_trace(
-            go.Scatter(x=decile_stats.index, y=decile_stats['Taux_positif_reel'], 
-                      mode='lines+markers', name="Taux positifs réel", line=dict(color='red')),
-            row=1, col=2
-        )
-        
-        # Probabilités moyennes
-        fig.add_trace(
-            go.Bar(x=decile_stats.index, y=decile_stats['Probabilite_moyenne'], 
-                   name="Prob moyenne", marker_color='lightgreen'),
-            row=2, col=1
-        )
-        
-        fig.update_layout(height=600, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
-        
-    else:
-        # Régression : analyser par déciles de valeurs prédites
-        df_analysis = pd.DataFrame({
-            'true': y_true,
-            'pred': y_pred,
-            'error': np.abs(y_true - y_pred)
-        })
-        
-        df_analysis['decile'] = pd.qcut(df_analysis['pred'], 10, labels=False, duplicates='drop')
-        
-        decile_stats = df_analysis.groupby('decile').agg({
-            'true': ['mean', 'std'],
-            'pred': ['mean', 'std'],
-            'error': ['mean', 'std']
-        }).round(4)
-        
-        decile_stats.columns = ['Vrai_moyenne', 'Vrai_std', 
-                               'Pred_moyenne', 'Pred_std',
-                               'Erreur_moyenne', 'Erreur_std']
-        
-        st.subheader("📊 Analyse par Déciles (Régression)")
-        st.dataframe(decile_stats, use_container_width=True)
-        
-        # Visualisation
-        fig = make_subplots(
-            rows=1, cols=2,
-            subplot_titles=("Valeurs moyennes par décile", "Erreurs moyennes par décile")
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=decile_stats.index, y=decile_stats['Vrai_moyenne'], 
-                      mode='lines+markers', name="Vrai", line=dict(color='blue')),
-            row=1, col=1
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=decile_stats.index, y=decile_stats['Pred_moyenne'], 
-                      mode='lines+markers', name="Prédit", line=dict(color='red')),
-            row=1, col=1
-        )
-        
-        fig.add_trace(
-            go.Bar(x=decile_stats.index, y=decile_stats['Erreur_moyenne'], 
-                   name="Erreur moyenne", marker_color='orange'),
-            row=1, col=2
-        )
-        
-        fig.update_layout(height=400, showlegend=True)
-        st.plotly_chart(fig, use_container_width=True)
+    try:
+        if task_type == "classification" and y_pred_proba is not None:
+            # Classification : analyser par déciles de probabilité
+            df_analysis = pd.DataFrame({
+                'true': y_true,
+                'pred_proba': y_pred_proba,
+                'pred': y_pred
+            })
+            
+            # Découper en déciles
+            df_analysis['decile'] = pd.qcut(df_analysis['pred_proba'], 10, labels=False, duplicates='drop')
+            
+            # Convertir les labels en numérique pour le calcul
+            # Gérer le cas où y_true peut être textuel
+            try:
+                # Si les labels sont textuels, les convertir en binaire (positif/négatif)
+                unique_labels = df_analysis['true'].unique()
+                if len(unique_labels) == 2:
+                    # Cas binaire : convertir en 0/1
+                    label_map = {unique_labels[0]: 0, unique_labels[1]: 1}
+                    df_analysis['true_numeric'] = df_analysis['true'].map(label_map)
+                else:
+                    # Cas multi-classe : utiliser LabelEncoder
+                    from sklearn.preprocessing import LabelEncoder
+                    le = LabelEncoder()
+                    df_analysis['true_numeric'] = le.fit_transform(df_analysis['true'])
+            except:
+                # En cas d'erreur, créer une colonne binaire simple
+                df_analysis['true_numeric'] = (df_analysis['true'] == df_analysis['true'].iloc[0]).astype(int)
+            
+            # Calculer les métriques par décile
+            decile_stats = df_analysis.groupby('decile').agg({
+                'true': ['count'],  # Juste le count pour les labels originaux
+                'true_numeric': ['sum', 'mean'],  # Calculs sur la version numérique
+                'pred_proba': ['mean', 'min', 'max']
+            }).round(4)
+            
+            decile_stats.columns = ['Nb_observations', 'Nb_positifs', 'Taux_positif_reel', 
+                                   'Probabilite_moyenne', 'Prob_min', 'Prob_max']
+            
+            st.subheader("📊 Analyse par Déciles (Classification)")
+            st.dataframe(decile_stats, use_container_width=True)
+            
+            # Visualisation
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=("Distribution par décile", "Taux de positifs par décile",
+                              "Probabilités moyennes", "Effectifs par décile"),
+                specs=[[{"type": "bar"}, {"type": "scatter"}],
+                       [{"type": "bar"}, {"type": "bar"}]]
+            )
+            
+            # Effectifs par décile
+            fig.add_trace(
+                go.Bar(x=decile_stats.index, y=decile_stats['Nb_observations'], 
+                       name="Effectifs", marker_color='lightblue'),
+                row=1, col=1
+            )
+            
+            # Taux de positifs
+            fig.add_trace(
+                go.Scatter(x=decile_stats.index, y=decile_stats['Taux_positif_reel'], 
+                          mode='lines+markers', name="Taux positifs réel", line=dict(color='red')),
+                row=1, col=2
+            )
+            
+            # Probabilités moyennes
+            fig.add_trace(
+                go.Bar(x=decile_stats.index, y=decile_stats['Probabilite_moyenne'], 
+                       name="Prob moyenne", marker_color='lightgreen'),
+                row=2, col=1
+            )
+            
+            fig.update_layout(height=600, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        else:
+            # Régression : analyser par déciles de valeurs prédites
+            df_analysis = pd.DataFrame({
+                'true': y_true,
+                'pred': y_pred,
+                'error': np.abs(y_true - y_pred)
+            })
+            
+            df_analysis['decile'] = pd.qcut(df_analysis['pred'], 10, labels=False, duplicates='drop')
+            
+            decile_stats = df_analysis.groupby('decile').agg({
+                'true': ['mean', 'std'],
+                'pred': ['mean', 'std'],
+                'error': ['mean', 'std']
+            }).round(4)
+            
+            decile_stats.columns = ['Vrai_moyenne', 'Vrai_std', 
+                                   'Pred_moyenne', 'Pred_std',
+                                   'Erreur_moyenne', 'Erreur_std']
+            
+            st.subheader("📊 Analyse par Déciles (Régression)")
+            st.dataframe(decile_stats, use_container_width=True)
+            
+            # Visualisation
+            fig = make_subplots(
+                rows=1, cols=2,
+                subplot_titles=("Valeurs moyennes par décile", "Erreurs moyennes par décile")
+            )
+            
+            fig.add_trace(
+                go.Scatter(x=decile_stats.index, y=decile_stats['Vrai_moyenne'], 
+                          mode='lines+markers', name="Vrai", line=dict(color='blue')),
+                row=1, col=1
+            )
+            
+            fig.add_trace(
+                go.Scatter(x=decile_stats.index, y=decile_stats['Pred_moyenne'], 
+                          mode='lines+markers', name="Prédit", line=dict(color='red')),
+                row=1, col=1
+            )
+            
+            fig.add_trace(
+                go.Bar(x=decile_stats.index, y=decile_stats['Erreur_moyenne'], 
+                       name="Erreur moyenne", marker_color='orange'),
+                row=1, col=2
+            )
+            
+            fig.update_layout(height=400, showlegend=True)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    except Exception as e:
+        st.error(f"❌ Erreur lors de l'analyse par déciles : {str(e)}")
+        st.info("💡 **Solution possible** : Vérifiez que vos données contiennent des valeurs numériques valides")
 
 def learning_curve_analysis(model, X, y, cv=5):
     """Analyse des courbes d'apprentissage"""
     
     with st.spinner("📈 Calcul des learning curves..."):
         try:
+            # Déterminer le scoring en fonction du type de problème
+            if hasattr(y, 'nunique'):
+                unique_count = y.nunique()
+            elif hasattr(y, 'unique'):
+                unique_count = len(np.unique(y))
+            else:
+                unique_count = len(np.unique(y))
+            
+            scoring = 'accuracy' if unique_count < 20 else 'r2'
+            
             train_sizes, train_scores, val_scores = learning_curve(
                 model, X, y, cv=cv, n_jobs=-1, 
                 train_sizes=np.linspace(0.1, 1.0, 10),
-                scoring='accuracy' if y.nunique() < 20 else 'r2'
+                scoring=scoring
             )
             
             train_mean = np.mean(train_scores, axis=1)
@@ -272,39 +306,52 @@ def calibration_plot(y_true, y_pred_proba):
 def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
     """Interface principale pour l'évaluation avancée"""
     
-    st.markdown("## 🔬 Évaluation Avancée du Modèle")
+    try:
+        st.markdown("## 🔬 Évaluation Avancée du Modèle")
+        
+        # Prédictions avec gestion d'erreur
+        try:
+            y_pred = model.predict(X_test)
+        except Exception as e:
+            st.error(f"❌ Erreur lors de la prédiction : {str(e)}")
+            return
+        
+        y_pred_proba = None
+        if hasattr(model, "predict_proba") and task_type == "classification":
+            try:
+                y_pred_proba = model.predict_proba(X_test)[:, 1]
+            except Exception as e:
+                st.warning(f"⚠️ Erreur lors du calcul des probabilités : {str(e)}")
+        
+        # Onglets pour les différentes analyses
+        tabs = ["📊 Déciles", "📈 Learning Curves", "🎯 SHAP", "📋 Calibration"]
+        if task_type != "classification":
+            tabs.remove("📋 Calibration")
+        
+        selected_tab = st.tabs(tabs)
+        
+        # Analyse par déciles
+        with selected_tab[0]:
+            decile_analysis(y_test, y_pred, y_pred_proba, task_type)
+        
+        # Learning curves
+        with selected_tab[1]:
+            if st.button("🚀 Générer les Learning Curves"):
+                learning_curve_analysis(model, X_test, y_test)
+        
+        # SHAP
+        with selected_tab[2]:
+            if st.button("🔍 Analyser avec SHAP"):
+                shap_analysis(model, X_test)
+        
+        # Calibration (classification seulement)
+        if task_type == "classification" and len(selected_tab) > 3:
+            with selected_tab[3]:
+                if y_pred_proba is not None:
+                    calibration_plot(y_test, y_pred_proba)
+                else:
+                    st.warning("⚠️ Le modèle ne fournit pas de probabilités")
     
-    # Prédictions
-    y_pred = model.predict(X_test)
-    y_pred_proba = None
-    if hasattr(model, "predict_proba") and task_type == "classification":
-        y_pred_proba = model.predict_proba(X_test)[:, 1]
-    
-    # Onglets pour les différentes analyses
-    tabs = ["📊 Déciles", "📈 Learning Curves", "🎯 SHAP", "📋 Calibration"]
-    if task_type != "classification":
-        tabs.remove("📋 Calibration")
-    
-    selected_tab = st.tabs(tabs)
-    
-    # Analyse par déciles
-    with selected_tab[0]:
-        decile_analysis(y_test, y_pred, y_pred_proba, task_type)
-    
-    # Learning curves
-    with selected_tab[1]:
-        if st.button("🚀 Générer les Learning Curves"):
-            learning_curve_analysis(model, X_test, y_test)
-    
-    # SHAP
-    with selected_tab[2]:
-        if st.button("🔍 Analyser avec SHAP"):
-            shap_analysis(model, X_test)
-    
-    # Calibration (classification seulement)
-    if task_type == "classification" and len(selected_tab) > 3:
-        with selected_tab[3]:
-            if y_pred_proba is not None:
-                calibration_plot(y_test, y_pred_proba)
-            else:
-                st.warning("⚠️ Le modèle ne fournit pas de probabilités")
+    except Exception as e:
+        st.error(f"❌ Erreur générale dans l'évaluation avancée : {str(e)}")
+        st.info("💡 **Conseil** : Vérifiez que votre modèle et vos données sont valides")
