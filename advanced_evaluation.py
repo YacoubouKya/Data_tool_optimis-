@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import precision_recall_curve, roc_curve, auc
 
@@ -336,13 +338,22 @@ def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
         
         # Learning curves
         with selected_tab[1]:
-            if st.button("🚀 Générer les Learning Curves"):
-                learning_curve_analysis(model, X_test, y_test)
+            # Utiliser une clé unique pour éviter les conflits
+            if st.button("🚀 Générer les Learning Curves", key="learning_curves_btn"):
+                # Récupérer les données d'entraînement depuis session_state
+                X_train = st.session_state.get("X_train", X_test)
+                y_train = st.session_state.get("y_train", y_test)
+                learning_curve_analysis(model, X_train, y_train)
         
         # SHAP
         with selected_tab[2]:
-            if st.button("🔍 Analyser avec SHAP"):
-                shap_analysis(model, X_test)
+            # Utiliser une clé unique pour éviter les conflits
+            if st.button("🔍 Analyser avec SHAP", key="shap_analysis_btn"):
+                # Récupérer les noms de features si disponibles
+                feature_names = None
+                if hasattr(X_test, 'columns'):
+                    feature_names = X_test.columns.tolist()
+                shap_analysis(model, X_test, feature_names)
         
         # Calibration (classification seulement)
         if task_type == "classification" and len(selected_tab) > 3:
