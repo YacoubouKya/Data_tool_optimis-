@@ -338,59 +338,51 @@ def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
         
         # Learning curves
         with selected_tab[1]:
-            # Version 1 : Utiliser session_state avec rerun
-            if st.button("🚀 Générer les Learning Curves", key="learning_curves_btn"):
-                st.session_state["run_learning_curves"] = True
-                st.rerun()  # Forcer le rechargement pour exécuter l'analyse
+            st.write("� **Analyse des Learning Curves**")
+            st.info("💡 Les learning curves aident à détecter l'overfitting et l'underfitting")
             
-            # Version 2 : Alternative directe (si rerun ne fonctionne pas)
-            if st.button("🔄 Générer (Alternative)", key="learning_curves_alt"):
-                st.info("🔄 **Génération des Learning Curves en cours...**")
-                # Récupérer les données d'entraînement depuis session_state
-                X_train = st.session_state.get("X_train", X_test)
-                y_train = st.session_state.get("y_train", y_test)
-                learning_curve_analysis(model, X_train, y_train)
-                st.success("✅ **Learning Curves générées avec succès !**")
-            
-            # Exécuter l'analyse si le bouton principal a été cliqué
-            if st.session_state.get("run_learning_curves", False):
-                st.info("🔄 **Génération des Learning Curves en cours...**")
-                # Récupérer les données d'entraînement depuis session_state
-                X_train = st.session_state.get("X_train", X_test)
-                y_train = st.session_state.get("y_train", y_test)
-                learning_curve_analysis(model, X_train, y_train)
-                # Réinitialiser l'état pour éviter l'exécution répétée
-                st.session_state["run_learning_curves"] = False
-                st.success("✅ **Learning Curves générées avec succès !**")
+            # Bouton simple et direct
+            if st.button("� Générer les Learning Curves", key="learning_curves_btn", help="Génère les courbes d'apprentissage"):
+                with st.spinner("� Calcul des learning curves en cours..."):
+                    try:
+                        # Récupérer les données d'entraînement depuis session_state
+                        X_train = st.session_state.get("X_train", X_test)
+                        y_train = st.session_state.get("y_train", y_test)
+                        
+                        # Validation des données
+                        if X_train is None or y_train is None:
+                            st.error("❌ Données d'entraînement non disponibles")
+                        else:
+                            learning_curve_analysis(model, X_train, y_train)
+                            st.success("✅ **Learning Curves générées avec succès !**")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Erreur lors de la génération des learning curves : {str(e)}")
         
         # SHAP
         with selected_tab[2]:
-            # Version 1 : Utiliser session_state avec rerun
-            if st.button("🔍 Analyser avec SHAP", key="shap_analysis_btn"):
-                st.session_state["run_shap_analysis"] = True
-                st.rerun()  # Forcer le rechargement pour exécuter l'analyse
+            st.write("🎯 **Analyse SHAP (SHapley Additive exPlanations)**")
+            st.info("� SHAP explique l'impact de chaque feature sur les prédictions du modèle")
             
-            # Version 2 : Alternative directe (si rerun ne fonctionne pas)
-            if st.button("🔄 Analyser (Alternative)", key="shap_analysis_alt"):
-                st.info("🔄 **Analyse SHAP en cours...**")
-                # Récupérer les noms de features si disponibles
-                feature_names = None
-                if hasattr(X_test, 'columns'):
-                    feature_names = X_test.columns.tolist()
-                shap_analysis(model, X_test, feature_names)
-                st.success("✅ **Analyse SHAP terminée avec succès !**")
-            
-            # Exécuter l'analyse si le bouton principal a été cliqué
-            if st.session_state.get("run_shap_analysis", False):
-                st.info("🔄 **Analyse SHAP en cours...**")
-                # Récupérer les noms de features si disponibles
-                feature_names = None
-                if hasattr(X_test, 'columns'):
-                    feature_names = X_test.columns.tolist()
-                shap_analysis(model, X_test, feature_names)
-                # Réinitialiser l'état pour éviter l'exécution répétée
-                st.session_state["run_shap_analysis"] = False
-                st.success("✅ **Analyse SHAP terminée avec succès !**")
+            # Vérifier si SHAP est disponible
+            if not SHAP_AVAILABLE:
+                st.warning("⚠️ SHAP n'est pas installé. Installez-le avec : `pip install shap`")
+                st.code("pip install shap")
+            else:
+                # Bouton simple et direct
+                if st.button("🔍 Analyser avec SHAP", key="shap_analysis_btn", help="Génère l'analyse SHAP"):
+                    with st.spinner("� Analyse SHAP en cours..."):
+                        try:
+                            # Récupérer les noms de features si disponibles
+                            feature_names = None
+                            if hasattr(X_test, 'columns'):
+                                feature_names = X_test.columns.tolist()
+                            
+                            shap_analysis(model, X_test, feature_names)
+                            st.success("✅ **Analyse SHAP terminée avec succès !**")
+                            
+                        except Exception as e:
+                            st.error(f"❌ Erreur lors de l'analyse SHAP : {str(e)}")
         
         # Calibration (classification seulement)
         if task_type == "classification" and len(selected_tab) > 3:
