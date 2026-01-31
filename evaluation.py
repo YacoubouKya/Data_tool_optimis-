@@ -28,16 +28,6 @@ def run_evaluation(X_test, y_test):
     model_to_evaluate = None
     model_display_name = None
     
-    # Debug : Afficher ce qui est disponible en session state
-    if st.checkbox("🔍 Debug - Voir les modèles disponibles"):
-        st.write("**Session state des modèles :**")
-        st.write(f"- refined_model (model): {'✅ Disponible' if refined_model else '❌ Non disponible'}")
-        st.write(f"- best_model: {'✅ Disponible' if best_model else '❌ Non disponible'}")
-        st.write(f"- refined_model_name: {refined_model_name}")
-        st.write(f"- best_model_name: {best_model_name}")
-        st.write(f"- best_model_score: {best_model_score}")
-    
-    # Logique améliorée de sélection du modèle
     if best_model is not None:
         # Si on a un best_model (venant de la comparaison), c'est le modèle principal
         if refined_model is not None and refined_model_name != best_model_name:
@@ -77,6 +67,18 @@ def run_evaluation(X_test, y_test):
         st.error("❌ Aucun modèle disponible pour l'évaluation.")
         st.info("💡 **Solution** : Entraînez d'abord un modèle via la comparaison ou l'affinage.")
         return
+    
+    # Afficher clairement le modèle en cours d'évaluation
+    st.markdown("---")
+    st.markdown(f"## 📊 Modèle évalué : {model_display_name}")
+    
+    # Ajouter des informations supplémentaires si disponible
+    if best_model_score and model_display_name == best_model_name:
+        st.info(f"🏆 **Meilleur modèle de la comparaison** avec un score de {best_model_score:.4f}")
+    elif refined_model_name and model_display_name == refined_model_name:
+        st.info("🔧 **Modèle affiné** avec hyperparamètres optimisés")
+    
+    st.markdown("---")
     
     preds = model_to_evaluate.predict(X_test)
 
