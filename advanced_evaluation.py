@@ -13,7 +13,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sklearn.model_selection import learning_curve
-from sklearn.metrics import precision_recall_curve, roc_curve, auc, calibration_curve
+from sklearn.metrics import precision_recall_curve, roc_curve, auc
+from sklearn.calibration import calibration_curve
 
 # Optional imports avec gestion d'erreur
 try:
