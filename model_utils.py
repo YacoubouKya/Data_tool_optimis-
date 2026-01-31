@@ -28,7 +28,7 @@ def validate_and_clean_target(y: pd.Series, target_name: str, silent: bool = Fal
         Tuple (y_cleaned, indices_to_keep)
     """
     if not silent:
-        st.markdown("###  Validation des Données")
+        st.markdown("### 🔍 Validation des Données")
     
     # Vérifier les valeurs manquantes
     y_missing = y.isna().sum()
@@ -110,7 +110,7 @@ def select_task_type_with_ui(y: pd.Series, key_suffix: str = "") -> str:
     default_index = 0 if auto_task == "classification" else 1
     
     task_choice = st.radio(
-        " Type de modélisation",
+        "🎯 Type de modélisation",
         options=["Classification", "Régression"],
         index=default_index,
         key=f"task_type_{key_suffix}",
@@ -267,7 +267,8 @@ def store_model_in_session(
     y_test: pd.Series,
     task: str,
     model_name: Optional[str] = None,
-    metrics_dict: Optional[dict] = None
+    metrics_dict: Optional[dict] = None,
+    is_comparison: bool = False
 ):
     """
     Stocke le modèle et les données dans session_state de manière cohérente
@@ -279,9 +280,10 @@ def store_model_in_session(
         task: Type de tâche
         model_name: Nom du modèle (optionnel)
         metrics_dict: Dictionnaire des métriques (optionnel)
+        is_comparison: True si vient de la comparaison de modèles
     """
+    # Stocker les données communes
     st.session_state.update({
-        "model": model,
         "X_train": X_train,
         "X_test": X_test,
         "y_train": y_train,
@@ -289,8 +291,20 @@ def store_model_in_session(
         "task_type": task
     })
     
-    if model_name:
-        st.session_state["best_model_name"] = model_name
+    if is_comparison:
+        # Cas de la comparaison : stocker dans best_model
+        st.session_state.update({
+            "best_model": model,
+            "best_model_name": model_name or "Modèle",
+            "model": None,  # Vider le modèle affiné précédent
+            "current_model_name": None
+        })
+    else:
+        # Cas de l'affinage : stocker dans model
+        st.session_state.update({
+            "model": model,
+            "current_model_name": model_name or "Modèle affiné"
+        })
     
     if metrics_dict:
         st.session_state["evaluation_metrics"] = pd.DataFrame([metrics_dict])
@@ -388,11 +402,11 @@ def display_model_info(model_name: str, task: str):
     if model_name in model_descriptions:
         info = model_descriptions[model_name]
         st.markdown("---")
-        st.markdown(f"** À propos de {model_name}**")
+        st.markdown(f"**ℹ️ À propos de {model_name}**")
         st.markdown(f"**Description** : {info['description']}")
-        st.markdown(f"** Avantages** : {info['pros']}")
-        st.markdown(f"** Limitations** : {info['cons']}")
-        st.markdown(f"** Cas d'usage** : {info['use_case']}")
+        st.markdown(f"**✅ Avantages** : {info['pros']}")
+        st.markdown(f"**⚠️ Limitations** : {info['cons']}")
+        st.markdown(f"**🎯 Cas d'usage** : {info['use_case']}")
         st.markdown("---")
 
 
@@ -449,4 +463,3 @@ def extract_feature_importance(pipeline: Any, X: pd.DataFrame) -> Optional[pd.Se
         pass
     
     return None
-
