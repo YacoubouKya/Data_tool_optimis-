@@ -525,7 +525,8 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
         if dataset_size_mb > 5 or n_rows > 10000:
             st.session_state.selected_models = model_utils.get_fast_models(task)
         else:
-            st.session_state.selected_models = ["Random Forest", "Gradient Boosting"]
+            # Utiliser les modèles rapides pour éviter les incompatibilités
+            st.session_state.selected_models = model_utils.get_fast_models(task)
     
     # Nettoyer la sélection pour ne garder que les modèles disponibles
     available_models = model_utils.get_available_models(task)
