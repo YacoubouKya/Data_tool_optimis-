@@ -42,7 +42,7 @@ def generate_profile(df: pd.DataFrame):
         #)
     #else:
         # Profiling minimal pour petits datasets
-        profile = ProfileReport(df, title="Profiling EDA", minimal=True)
+    profile = ProfileReport(df, title="Profiling EDA", minimal=True)
     
     return profile
 
@@ -163,3 +163,4 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
