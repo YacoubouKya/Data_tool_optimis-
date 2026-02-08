@@ -20,29 +20,29 @@ def generate_profile(df: pd.DataFrame):
     - Profiling minimal pour éviter les timeouts
     """
     # Calculer la taille du dataset
-    dataset_size_mb = df.memory_usage(deep=True).sum() / 200 / 200
+    dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
     n_rows = len(df)
     
     # Échantillonnage intelligent pour les gros datasets
-    #if n_rows > 10000 or dataset_size_mb > 5:
-        #st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
-        #st.info("💡 Échantillonnage de 10,000 lignes pour accélérer le profiling")
-        #df_sample = df.sample(n=min(10000, n_rows), random_state=42)
+    if n_rows > 10000 or dataset_size_mb > 5:
+        st.warning(f"⚠️ Dataset volumineux détecté ({n_rows:,} lignes, {dataset_size_mb:.1f} MB)")
+        st.info("💡 Échantillonnage de 10,000 lignes pour accélérer le profiling")
+        df_sample = df.sample(n=min(10000, n_rows), random_state=42)
         
         # Profiling ultra-minimal pour gros datasets
-        #profile = ProfileReport(
-            #df_sample,
-            #title="Profiling EDA (Échantillon)",
-            #minimal=True,
-            #explorative=False,
-            #correlations=None,
-            #missing_diagrams=None,
-            #interactions=None,
-            #samples=None
-        #)
-    #else:
+        profile = ProfileReport(
+            df_sample,
+            title="Profiling EDA (Échantillon)",
+            minimal=True,
+            explorative=False,
+            correlations=None,
+            missing_diagrams=None,
+            interactions=None,
+            samples=None
+        )
+    else:
         # Profiling minimal pour petits datasets
-    profile = ProfileReport(df, title="Profiling EDA")
+        profile = ProfileReport(df, title="Profiling EDA", minimal=True)
     
     return profile
 
@@ -161,8 +161,4 @@ def run_eda(df: pd.DataFrame):
             sns.heatmap(corr_display, annot=True, cmap="coolwarm", center=0, ax=ax)
             ax.set_title(f"Matrice de corrélation ({corr_method.capitalize()})")
             st.pyplot(fig)
-
             plt.close(fig)
-
-
-
