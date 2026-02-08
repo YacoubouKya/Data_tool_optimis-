@@ -20,7 +20,7 @@ def generate_profile(df: pd.DataFrame):
     - Profiling minimal pour éviter les timeouts
     """
     # Calculer la taille du dataset
-    dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+    dataset_size_mb = df.memory_usage(deep=True).sum() / 200 / 200
     n_rows = len(df)
     
     # Échantillonnage intelligent pour les gros datasets
@@ -163,5 +163,6 @@ def run_eda(df: pd.DataFrame):
             st.pyplot(fig)
 
             plt.close(fig)
+
 
 
