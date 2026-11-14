@@ -20,7 +20,7 @@ plotly
 
 # ===== PROFILING (OBLIGATOIRE) =====
 # Nécessite Python 3.11 (configuré via runtime.txt)
-ydata-profiling>=4.5.0
+ydata-profiling>=4.5.0,<5
 
 # ===== STATISTIQUES =====
 statsmodels>=0.14.0
@@ -33,7 +33,8 @@ xlsxwriter>=3.1.0
 
 # ===== DÉPENDANCES SUPPLÉMENTAIRES =====
 # Nécessaires pour ydata-profiling et compatibilité
-setuptools>=68.0.0
+# ydata-profiling importe encore pkg_resources, supprimé de setuptools>=81
+setuptools>=68.0.0,<81
 Jinja2>=3.1.0
 minify-html>=0.18.0
 phik>=0.12.0
