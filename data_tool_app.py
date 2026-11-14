@@ -16,7 +16,7 @@ from datatool import (
 from datatool.error_handler import initialize_error_handling, safe_execute
 from datatool.validators import validate_dataframe, validate_session_state
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 CSS_FILE = Path(__file__).parent / "datatool" / "assets" / "style.css"
 SECTIONS = [
     "Chargement",
@@ -43,11 +43,6 @@ st.set_page_config(
 # ------------------------
 st.markdown(f"<style>{CSS_FILE.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
-# Bandeau supérieur
-st.markdown(
-    '<div class="custom-header"><div class="logo">Data Project Tool</div></div>',
-    unsafe_allow_html=True,
-)
 
 # ------------------------
 # Initialisation de la gestion d'erreurs

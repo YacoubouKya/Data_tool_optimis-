@@ -1,9 +1,17 @@
+# Theme unique (pas de selecteur clair / sombre) : les contrastes ont ete verifies
+# pour ces couleurs.
 [theme]
+base = "dark"
 primaryColor = "#FFD700"
 backgroundColor = "#1E3A5F"
 secondaryBackgroundColor = "#1569C7"
 textColor = "#FFFFFF"
 font = "sans serif"
+
+[theme.sidebar]
+backgroundColor = "#1569C7"
+secondaryBackgroundColor = "#1E3A5F"
+textColor = "#FFFFFF"
 
 [server]
 maxUploadSize = 1100

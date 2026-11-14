@@ -109,7 +109,7 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
 
     return validation_passed
 
-def run_modeling(df: pd.DataFrame) -> dict:
+def run_modeling(df: pd.DataFrame) -> None:
     st.subheader("Modélisation interactive")
 
     # Détecter si on vient de la comparaison
@@ -512,40 +512,19 @@ def run_modeling(df: pd.DataFrame) -> dict:
             metrics_result = metrics.regression_metrics(y_test, preds)
 
         metrics_display = model_utils.format_metrics(metrics_result, decimals=4)
-        st.write("**Metrics (test)** :")
-        st.json(metrics_display)
-
-        # Téléchargements (le disque du serveur n'est pas accessible sur Streamlit Cloud)
+        # Résultats conservés en session : ils restent affichés après chaque interaction
         safe_target = "".join(c if c.isalnum() else "_" for c in target)
         buffer = BytesIO()
         joblib.dump(pipe, buffer)
-        col_model, col_train, col_test = st.columns(3)
-        with col_model:
-            st.download_button(
-                "Télécharger le modèle (.pkl)",
-                buffer.getvalue(),
-                file_name=f"model_{safe_target}.pkl",
-                mime="application/octet-stream",
-                on_click="ignore",
-            )
-        with col_train:
-            st.download_button(
-                "Télécharger le jeu d'entraînement",
-                X_train.assign(**{target: y_train}).to_csv(index=False),
-                file_name=f"train_{safe_target}.csv",
-                mime="text/csv",
-                on_click="ignore",
-            )
-        with col_test:
-            st.download_button(
-                "Télécharger le jeu de test",
-                X_test.assign(**{target: y_test}).to_csv(index=False),
-                file_name=f"test_{safe_target}.csv",
-                mime="text/csv",
-                on_click="ignore",
-            )
-
-        st.success("Modèle entraîné avec succès !")
+        st.session_state["modeling_result"] = {
+            "target": target,
+            "model_name": model_display_choice,
+            "metrics": metrics_display,
+            "model_bytes": buffer.getvalue(),
+            "train_csv": X_train.assign(**{target: y_train}).to_csv(index=False),
+            "test_csv": X_test.assign(**{target: y_test}).to_csv(index=False),
+            "safe_target": safe_target,
+        }
 
         # Stocker dans session_state pour reporting/evaluation
         st.session_state.update({
@@ -567,12 +546,42 @@ def run_modeling(df: pd.DataFrame) -> dict:
         if feature_importance is not None:
             st.session_state["feature_importance"] = feature_importance
 
-        return {
-            "pipeline": pipe,
-            "X_train": X_train,
-            "X_test": X_test,
-            "y_train": y_train,
-            "y_test": y_test,
-            "task": task,
-            "y_pred_proba": preds_proba
-        }
+
+    result = st.session_state.get("modeling_result")
+    if result and result["target"] == target:
+        _render_modeling_result(result)
+
+
+def _render_modeling_result(result: dict) -> None:
+    """Affiche les métriques et les téléchargements du dernier modèle entraîné."""
+    st.success(f"Modèle entraîné avec succès : {result['model_name']}")
+    st.write("**Métriques (jeu de test)** :")
+    st.json(result["metrics"])
+
+    # Téléchargements (le disque du serveur n'est pas accessible sur Streamlit Cloud)
+    safe_target = result["safe_target"]
+    col_model, col_train, col_test = st.columns(3)
+    with col_model:
+        st.download_button(
+            "Télécharger le modèle (.pkl)",
+            result["model_bytes"],
+            file_name=f"model_{safe_target}.pkl",
+            mime="application/octet-stream",
+            on_click="ignore",
+        )
+    with col_train:
+        st.download_button(
+            "Télécharger le jeu d'entraînement",
+            result["train_csv"],
+            file_name=f"train_{safe_target}.csv",
+            mime="text/csv",
+            on_click="ignore",
+        )
+    with col_test:
+        st.download_button(
+            "Télécharger le jeu de test",
+            result["test_csv"],
+            file_name=f"test_{safe_target}.csv",
+            mime="text/csv",
+            on_click="ignore",
+        )

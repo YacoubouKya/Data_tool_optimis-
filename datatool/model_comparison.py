@@ -583,7 +583,7 @@ def _render_results(comparator: ModelComparator, results_df: pd.DataFrame, targe
     st.dataframe(
         results_df.style.highlight_max(
             subset=[col for col in results_df.columns if col not in ["Modèle", "Temps (s)", "Statut"]],
-            color="lightgreen"
+            props="background-color: #FFD700; color: #1E3A5F; font-weight: bold;"
         ),
         width="stretch"
     )

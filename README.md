@@ -6,6 +6,12 @@ et rapport HTML.
 
 Application en ligne : https://data-tool-koumai.streamlit.app/
 
+## Aperçu
+
+| Chargement | Prétraitement | Comparaison de modèles |
+|---|---|---|
+| ![Chargement](docs/screenshots/01_chargement.png) | ![Prétraitement](docs/screenshots/02_pretraitement.png) | ![Comparaison](docs/screenshots/03_comparaison.png) |
+
 ## Fonctionnalités
 
 | Section | Contenu |
@@ -63,8 +69,8 @@ datatool/
     validators.py           Validations avant chaque section
     error_handler.py        Gestion des erreurs par section
     assets/style.css        Thème visuel
-.streamlit/config.toml      Thème et limite de taille des fichiers (1,1 Go)
-docs/                       Exemple de dictionnaire de données
+.streamlit/config.toml      Thème (couleurs vérifiées pour la lisibilité) et limite de taille des fichiers (1,1 Go)
+docs/                       Exemple de dictionnaire de données, captures d'écran
 ```
 
 ## Installation locale
