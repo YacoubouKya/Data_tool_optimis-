@@ -6,9 +6,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from io import BytesIO
-from ydata_profiling import ProfileReport
+try:
+    from ydata_profiling import ProfileReport
+    YDATA_AVAILABLE = True
+    YDATA_IMPORT_ERROR = None
+except Exception as e:  # ne pas faire planter toute l'application
+    ProfileReport = None
+    YDATA_AVAILABLE = False
+    YDATA_IMPORT_ERROR = e
 
-@st.cache_data(show_spinner="Génération du profiling en cours...")
+# cache_resource (et non cache_data) : un ProfileReport n'est pas sérialisable (pickle)
+@st.cache_resource(show_spinner="Génération du profiling en cours...")
 def generate_profile(df: pd.DataFrame):
     """
     Génère un rapport de profiling avec ydata-profiling (avec cache).
@@ -19,6 +27,11 @@ def generate_profile(df: pd.DataFrame):
     - Échantillonnage si >10000 lignes
     - Profiling minimal pour éviter les timeouts
     """
+    if not YDATA_AVAILABLE:
+        raise ImportError(
+            f"ydata-profiling indisponible : {YDATA_IMPORT_ERROR}. "
+            "Vérifiez que setuptools<81 est installé (pip install 'setuptools<81')."
+        )
     # Calculer la taille du dataset
     dataset_size_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
     n_rows = len(df)
@@ -38,11 +51,12 @@ def generate_profile(df: pd.DataFrame):
             correlations=None,
             missing_diagrams=None,
             interactions=None,
-            samples=None
+            samples=None,
+            progress_bar=False
         )
     else:
         # Profiling minimal pour petits datasets
-        profile = ProfileReport(df, title="Profiling EDA", minimal=True)
+        profile = ProfileReport(df, title="Profiling EDA", minimal=True, progress_bar=False)
     
     return profile
 
@@ -62,7 +76,9 @@ def run_eda(df: pd.DataFrame):
     if "show_report" not in st.session_state:
         st.session_state.show_report = False
 
-    if not st.session_state.report_generated:
+    if not YDATA_AVAILABLE:
+        st.error(f"❌ Rapport de profiling indisponible : {YDATA_IMPORT_ERROR}")
+    elif not st.session_state.report_generated:
         if st.button("📊 Générer le rapport de Profiling"):
             prof = generate_profile(df)
             prof.to_file("profiling_report.html")
