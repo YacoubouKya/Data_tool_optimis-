@@ -1,391 +1,91 @@
-#  Data Project Tool
+# Data Project Tool
 
-**Outil interactif d'analyse de données et de modélisation Machine Learning**
+Application Streamlit qui couvre un projet data science de bout en bout, sans écrire
+de code : chargement d'un fichier, exploration, nettoyage, modélisation, évaluation
+et rapport HTML.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.9%2B-brightgreen)
-![Streamlit](https://img.shields.io/badge/streamlit-1.30.0-red)
-![License](https://img.shields.io/badge/license-MIT-green)
+Application en ligne : https://data-tool-koumai.streamlit.app/
 
-## Démo en ligne
+## Fonctionnalités
 
-👉 **https://data-tool-koumai.streamlit.app/**
+| Section | Contenu |
+|---|---|
+| Chargement | Fichiers CSV (séparateur au choix) et Excel (choix de la feuille) |
+| EDA | Aperçu, statistiques descriptives, rapport ydata-profiling (affichage et téléchargement), histogrammes, matrice de corrélation (Pearson, Spearman, Kendall) |
+| Prétraitement | Mode automatique : anomalies détectées par le profiling (valeurs manquantes, colonnes constantes, cardinalité élevée, valeurs infinies, doublons) et corrections au choix, avec journal téléchargeable. Mode dictionnaire : contrôle des données selon des règles métier (voir plus bas) |
+| Analyse exploratoire | Analyses bivariées (quali/quali, quali/quanti, quanti/quanti), indicateurs actuariels, détection d'outliers, corrélations |
+| Comparaison de modèles | Entraînement de plusieurs modèles en une fois, validation croisée optionnelle, mode rapide pour les gros fichiers, tableau, graphiques, export CSV et téléchargement du meilleur modèle |
+| Affinage de modèle | Réglage des hyperparamètres d'un algorithme, pré-rempli avec le meilleur modèle de la comparaison ; téléchargement du modèle et des jeux d'entraînement et de test |
+| Évaluation | Classification : matrice de confusion, courbes ROC et précision-rappel. Régression : résidus, valeurs prédites contre observées. Évaluation avancée : SHAP, déciles, courbes d'apprentissage, calibration |
+| Reporting | Rapport HTML consolidé, sections au choix, téléchargeable |
 
-> **Note** : Cette application est déployée sur Streamlit Cloud et accessible sans installation.
+Modèles disponibles :
 
----
+- Classification : Random Forest, Gradient Boosting, Logistic Regression, Decision Tree, AdaBoost, Extra Trees, K-Nearest Neighbors, SVM, Naive Bayes.
+- Régression : Random Forest, Gradient Boosting, Linear Regression, Ridge, Lasso, Decision Tree, AdaBoost, Extra Trees, K-Nearest Neighbors, SVR.
 
-## Table des matières
+Le prétraitement des variables est automatique : imputation, standardisation optionnelle,
+one-hot encoding, et Target Encoding pour les variables catégorielles de plus de 100 modalités.
 
-- [Présentation](#présentation)
-- [Fonctionnalités](#fonctionnalités)
-- [Installation](#installation)
-- [Utilisation](#utilisation)
-- [Architecture](#architecture)
-- [Dépendances](#dépendances)
-- [Troubleshooting](#troubleshooting)
-- [Contribution](#contribution)
+## Prétraitement par dictionnaire de données
 
----
+Le dictionnaire est un fichier CSV ou Excel avec une ligne par colonne à contrôler :
 
-##  Présentation
+| Colonne | Contenu |
+|---|---|
+| `Colonne` | Nom de la colonne dans les données |
+| `Type` | `numerique`, `categorique`, `texte` ou `date` |
+| `Obligatoire` | `oui` ou `non` |
+| `Valeurs_Autorisées` | Liste séparée par des virgules (catégorielles) |
+| `Min`, `Max` | Bornes (numériques) |
+| `Format` | Format attendu : `email`, expression régulière ou format de date |
+| `Action_Si_Anomalie` | `imputer_moyenne`, `imputer_mediane`, `imputer_mode`, `supprimer_ligne`, `mettre_vide` ou `ignorer` |
 
-**Data Project Tool** est une application web interactive construite avec Streamlit qui permet de :
--  Charger des données (CSV, Excel)
--  Effectuer une analyse exploratoire automatique
--  Détecter et corriger les anomalies
--  Entraîner des modèles de Machine Learning
--  Évaluer les performances
--  Générer des rapports HTML consolidés
+Exemple : [`docs/dictionnaire_exemple.csv`](docs/dictionnaire_exemple.csv).
 
----
-
-##  Fonctionnalités
-
-### 1.  Chargement de données
-- Support CSV (avec choix du séparateur)
-- Support Excel (avec sélection de feuille)
-- Gestion automatique des encodages
-- Aperçu immédiat des données
-
-### 2.  Analyse exploratoire (EDA)
-- Profiling automatique avec **ydata-profiling**
-- Statistiques descriptives complètes
-- Histogrammes interactifs
-- Matrice de corrélation
-- Export du rapport HTML
-
-### 3.  Prétraitement intelligent
-- **Détection automatique** des anomalies :
-  - Valeurs manquantes
-  - Doublons
-  - Colonnes constantes
-  - Valeurs infinies
-  - Cardinalité élevée
-- **Corrections proposées** :
-  - Imputation (moyenne, médiane, mode)
-  - Suppression de lignes/colonnes
-  - Remplacement des valeurs infinies
-- **Log détaillé** des modifications
-- Export des données corrigées
-
-### 4.  Modélisation Machine Learning
-- **Auto-détection** du type de tâche (classification/régression)
-- **Modèles disponibles** :
-  - Random Forest
-  - Gradient Boosting
-  - Régression Linéaire/Logistique
-- **Pipeline complet** :
-  - Preprocessing automatique
-  - Imputation des valeurs manquantes
-  - Standardisation des variables numériques
-  - Encodage One-Hot des variables catégorielles
-- **Hyperparamètres personnalisables**
-- Sauvegarde automatique des modèles
-
-### 5.  Évaluation
-#### Classification
-- Métriques : Accuracy, F1-score, Precision, Recall
-- Matrice de confusion
-- Courbe ROC (binaire)
-- Courbe Précision-Rappel
-
-#### Régression
-- Métriques : MSE, RMSE, R²
-- Graphique Prédit vs Réel
-- Analyse des résidus
-- QQ-plot
-
-### 6.  Reporting
-- Rapport HTML consolidé
-- Toutes les sections du workflow
-- Graphiques intégrés (base64)
-- Téléchargement direct
-
----
-
-##  Installation
-
-### Prérequis
-- **Python 3.9 ou supérieur**
-- **pip** (gestionnaire de paquets Python)
-- **PowerShell** (pour Windows)
-
-### Méthode 1 : Script automatique (Recommandé)
-
-1. **Ouvrir PowerShell** dans le dossier du projet
-2. **Exécuter le script de lancement** :
-   ```powershell
-   .\launch.ps1
-   ```
-
-Le script va automatiquement :
-- ✅ Vérifier Python
-- ✅ Créer un environnement virtuel
-- ✅ Installer les dépendances
-- ✅ Lancer l'application
-
-### Méthode 2 : Installation manuelle
-
-```powershell
-# 1. Créer un environnement virtuel
-python -m venv venv
-
-# 2. Activer l'environnement virtuel
-.\venv\Scripts\Activate.ps1
-
-# 3. Installer les dépendances
-pip install -r modules\requirements.txt
-
-# 4. Lancer l'application
-streamlit run modules\data_tool_app.py
-```
-
-### ⚠️ Problème de permissions PowerShell ?
-
-Si vous obtenez une erreur d'exécution de script :
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
----
-
-## 📖 Utilisation
-
-### Démarrage rapide
-
-1. **Lancer l'application** :
-   ```powershell
-   .\launch.ps1
-   ```
-
-2. **Accéder à l'interface** :
-   - Ouvrir votre navigateur
-   - Aller sur `http://localhost:8501`
-
-3. **Workflow recommandé** :
-   ```
-    Chargement →  EDA →  Prétraitement →  Modélisation →  Évaluation →  Reporting
-   ```
-
-### Exemple avec vos données
-
-```python
-# 1. Charger le fichier Excel
-# Aller dans " Chargement"
-# Uploader "Portefeuille AGMF_prev.xlsx"
-# Sélectionner la feuille désirée
-
-# 2. Explorer les données
-# Aller dans " EDA"
-# Cliquer sur "Générer le rapport de Profiling"
-# Analyser les statistiques et visualisations
-
-# 3. Nettoyer les données
-# Aller dans " Prétraitement"
-# Sélectionner les corrections à appliquer
-# Télécharger la base corrigée
-
-# 4. Entraîner un modèle
-# Aller dans " Modélisation"
-# Choisir la variable cible
-# Configurer les hyperparamètres
-# Lancer l'entraînement
-
-# 5. Évaluer le modèle
-# Aller dans " Évaluation"
-# Consulter les métriques
-# Analyser les graphiques
-
-# 6. Générer le rapport
-# Aller dans " Reporting"
-# Créer le rapport HTML
-# Télécharger le rapport
-```
-
----
-
-##  Architecture
+## Structure
 
 ```
-Data Tool/
-│
-├── modules/                      # Modules principaux
-│   ├── __init__.py              # Initialisation du package
-│   ├── data_tool_app.py         # Application Streamlit
-│   ├── data_loader.py           # Chargement de fichiers
-│   ├── eda.py                   # Analyse exploratoire
-│   ├── preprocessing.py         # Prétraitement
-│   ├── modeling.py              # Modélisation ML
-│   ├── evaluation.py            # Évaluation
-│   ├── reporting.py             # Génération de rapports
-│   ├── requirements.txt         # Dépendances
-│   └── utils/                   # Utilitaires
-│       ├── __init__.py
-│       ├── helpers.py           # Fonctions helper
-│       └── metrics.py           # Métriques ML
-│
-├── outputs/                     # Fichiers générés
-│   ├── models/                  # Modèles sauvegardés (.pkl)
-│   ├── data/                    # Datasets train/test
-│   └── reports/                 # Rapports HTML
-│
-├── launch.ps1                   # Script de lancement
-├── README.md                    # Ce fichier
-└── DIAGNOSTIC.md                # Diagnostic technique
+data_tool_app.py            Point d'entrée Streamlit : navigation et sections
+datatool/
+    data_loader.py          Lecture CSV / Excel
+    eda.py                  EDA rapide et rapport ydata-profiling
+    preprocessing.py        Détection d'anomalies et corrections
+    data_quality.py         Contrôles par dictionnaire de données
+    exploratory_analysis.py Analyse exploratoire avancée
+    model_utils.py          Fonctions communes de modélisation
+    model_comparison.py     Comparaison de modèles
+    modeling.py             Affinage d'un modèle
+    metrics.py              Métriques
+    evaluation.py           Évaluation du modèle
+    advanced_evaluation.py  SHAP, déciles, apprentissage, calibration
+    reporting.py            Rapport HTML
+    validators.py           Validations avant chaque section
+    error_handler.py        Gestion des erreurs par section
+    assets/style.css        Thème visuel
+.streamlit/config.toml      Thème et limite de taille des fichiers (1,1 Go)
+docs/                       Exemple de dictionnaire de données
 ```
 
----
+## Installation locale
 
-##  Dépendances
+Python 3.11 recommandé.
 
-### Core
-- `streamlit==1.30.0` - Interface web
-- `pandas==2.1.1` - Manipulation de données
-- `numpy==1.24.3` - Calculs numériques
-- `openpyxl==3.1.2` - Lecture Excel
-
-### Machine Learning
-- `scikit-learn==1.3.2` - Modèles ML
-- `xgboost==2.0.3` - Gradient Boosting
-- `lightgbm==4.1.0` - Gradient Boosting
-
-### Visualisation
-- `matplotlib==3.8.0` - Graphiques
-- `seaborn==0.12.3` - Graphiques statistiques
-
-### Profiling
-- `ydata-profiling==4.5.1` - Profiling automatique
-- `streamlit-pandas-profiling==0.0.4` - Intégration Streamlit
-
-### Statistiques
-- `statsmodels==0.14.0` - Modèles statistiques
-- `scipy==1.11.4` - Fonctions scientifiques
-
-### Utilitaires
-- `joblib==1.3.2` - Sauvegarde de modèles
-- `jinja2==3.1.2` - Templates
-- `xlsxwriter==3.1.9` - Export Excel
-
----
-
-##  Troubleshooting
-
-### Problème : Import Error
-
-```
-ModuleNotFoundError: No module named 'modules'
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows : .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run data_tool_app.py
 ```
 
-**Solution** : Les fichiers `__init__.py` ont été créés. Relancez l'application.
+## Notes techniques
 
----
-
-### Problème : Requirements introuvable
-
-```
-ERROR: Could not open requirements file: [Errno 2] No such file or directory: 'modules\requirments.txt'
-```
-
-**Solution** : Le fichier `requirements.txt` (corrigé) a été créé dans `modules/`. Utilisez :
-```powershell
-pip install -r modules\requirements.txt
-```
-
----
-
-### Problème : Versions incompatibles
-
-```
-ERROR: Cannot install scikit-learn==1.7.1 because these package versions have conflicting dependencies.
-```
-
-**Solution** : Le nouveau fichier `requirements.txt` utilise des versions compatibles testées.
-
----
-
-### Problème : Application ne démarre pas
-
-```
-streamlit : Le terme 'streamlit' n'est pas reconnu...
-```
-
-**Solution** : Activez l'environnement virtuel :
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
----
-
-### Problème : Profiling très lent
-
-**Solution** : Dans `eda.py`, ligne 12, remplacez :
-```python
-profile = ProfileReport(df, title="Profiling EDA", explorative=True)
-```
-par :
-```python
-profile = ProfileReport(df, title="Profiling EDA", minimal=True)
-```
-
----
-
-### Problème : Division par zéro
-
-```
-ZeroDivisionError: division by zero
-```
-
-**Solution** : Vérifiez que votre dataset n'est pas vide et que la variable cible contient des valeurs.
-
----
-
-## Contribution
-
-### Bugs identifiés
-
-Consultez `DIAGNOSTIC.md` pour la liste complète des bugs et améliorations.
-
-### Priorités de développement
-
-1. **Critique** : Corriger division par zéro dans `modeling.py`
-2. **Majeur** : Gérer les NaN dans `evaluation.py`
-3. **Mineur** : Ajouter tests unitaires
-4. **Nice to have** : Support Parquet, JSON
-
----
-
-##  License
-
-MIT License - Libre d'utilisation et de modification
-
----
+- `setuptools` est limité à `<81` : ydata-profiling importe encore `pkg_resources`,
+  retiré des versions récentes de setuptools.
+- Aucun fichier n'est écrit sur le serveur : modèles, jeux de données et rapports sont
+  servis en téléchargement, et chaque utilisateur garde ses résultats dans sa session.
+- Les fichiers de plus de 10 000 lignes sont échantillonnés pour le profiling.
 
 ## Auteur
 
-**Data Tool Team**  
-Version 1.0.0 - Novembre 2024
-
----
-
-## 📞 Support
-
-Pour toute question ou problème :
-1. Consultez `DIAGNOSTIC.md` pour les problèmes connus
-2. Vérifiez que toutes les dépendances sont installées
-3. Assurez-vous d'utiliser Python 3.9+
-
----
-
-##  Remerciements
-
-- **Streamlit** pour le framework web
-- **scikit-learn** pour les modèles ML
-- **ydata-profiling** pour le profiling automatique
-- **Pandas** pour la manipulation de données
-
----
-
-
-
-
+Yacoubou KOUMAI

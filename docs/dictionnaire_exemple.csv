@@ -1,0 +1,5 @@
+Colonne,Type,Obligatoire,Valeurs_Autorisées,Min,Max,Format,Action_Si_Anomalie
+age,numerique,oui,,18,100,,imputer_mediane
+region,categorique,oui,"A,B,C",,,,imputer_mode
+prime,numerique,oui,,0,,,imputer_moyenne
+sinistre,categorique,oui,"0,1",,,,supprimer_ligne
