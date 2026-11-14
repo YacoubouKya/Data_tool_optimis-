@@ -16,7 +16,7 @@ from datatool import (
 from datatool.error_handler import initialize_error_handling, safe_execute
 from datatool.validators import validate_dataframe, validate_session_state
 
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 CSS_FILE = Path(__file__).parent / "datatool" / "assets" / "style.css"
 SECTIONS = [
     "Chargement",

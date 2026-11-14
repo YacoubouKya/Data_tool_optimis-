@@ -4,7 +4,7 @@ Application Streamlit qui couvre un projet data science de bout en bout, sans é
 de code : chargement d'un fichier, exploration, nettoyage, modélisation, évaluation
 et rapport HTML.
 
-Application en ligne : https://datatool-koumai.streamlit.app/
+Application en ligne : https://data-tool-koumai.streamlit.app/
 
 ## Aperçu
 
