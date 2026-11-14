@@ -1,11 +1,11 @@
 # app.py
 import streamlit as st
 import pandas as pd
-import data_loader, preprocessing, modeling, evaluation, reporting, model_comparison, exploratory_analysis
+import data_loader, eda, preprocessing, modeling, evaluation, reporting, model_comparison, exploratory_analysis
 from sklearn.model_selection import train_test_split
 from error_handler import safe_execute, initialize_error_handling
 from validators import validate_session_state, validate_dataframe
-#eda
+
 # ------------------------
 # ⚙️ Configuration de la page
 # ------------------------
