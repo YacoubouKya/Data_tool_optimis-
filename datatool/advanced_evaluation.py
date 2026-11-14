@@ -26,57 +26,57 @@ except ImportError:
 def shap_analysis(model, X_test, feature_names=None, max_display=20):
     """Analyse SHAP pour l'interprétabilité du modèle"""
     if not SHAP_AVAILABLE:
-        st.warning("⚠️ SHAP n'est pas installé. Installez avec : `pip install shap`")
+        st.warning("SHAP n'est pas installé. Installez avec : `pip install shap`")
         return
-    
-    with st.spinner("🔍 Calcul des valeurs SHAP..."):
+
+    with st.spinner("Calcul des valeurs SHAP..."):
         try:
             # Extraire le préprocesseur et le modèle
             if hasattr(model, 'named_steps'):
                 preprocessor = model.named_steps.get('preprocessor')
                 model_core = model.named_steps.get('model')
                 X_processed = preprocessor.transform(X_test)
-                
+
                 if feature_names is None:
                     try:
                         feature_names = preprocessor.get_feature_names_out()
                     except:
                         feature_names = [f"feature_{i}" for i in range(X_processed.shape[1])]
-                
+
                 # Créer l'explainer SHAP
                 if hasattr(model_core, 'feature_importances_'):
                     explainer = shap.TreeExplainer(model_core)
                 else:
                     explainer = shap.KernelExplainer(model_core, X_processed[:100])
-                
+
                 shap_values = explainer.shap_values(X_processed)
-                
+
                 if isinstance(shap_values, list) and len(shap_values) == 2:
                     shap_values = shap_values[1]  # Classe positive
-                
-                st.success("✅ Analyse SHAP calculée !")
-                
+
+                st.success("Analyse SHAP calculée !")
+
                 # Importance globale
                 shap_importance = np.abs(shap_values).mean(0)
                 feature_importance_df = pd.DataFrame({
                     'feature': feature_names,
                     'importance': shap_importance
                 }).sort_values('importance', ascending=False).head(max_display)
-                
+
                 fig = px.bar(feature_importance_df, x='importance', y='feature',
                             title="Importance Globale des Features (SHAP)", orientation='h')
                 fig.update_layout(height=max(400, len(feature_importance_df) * 25))
                 st.plotly_chart(fig, use_container_width=True)
-                
+
                 return shap_values, feature_names
-                
+
         except Exception as e:
-            st.error(f"❌ Erreur lors de l'analyse SHAP : {str(e)}")
+            st.error(f"Erreur lors de l'analyse SHAP : {str(e)}")
             return None, None
 
 def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification"):
     """Analyse par déciles des performances du modèle"""
-    
+
     try:
         if task_type == "classification" and y_pred_proba is not None:
             # Classification : analyser par déciles de probabilité
@@ -85,10 +85,10 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
                 'pred_proba': y_pred_proba,
                 'pred': y_pred
             })
-            
+
             # Découper en déciles
             df_analysis['decile'] = pd.qcut(df_analysis['pred_proba'], 10, labels=False, duplicates='drop')
-            
+
             # Convertir les labels en numérique pour le calcul
             # Gérer le cas où y_true peut être textuel
             try:
@@ -106,20 +106,20 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
             except:
                 # En cas d'erreur, créer une colonne binaire simple
                 df_analysis['true_numeric'] = (df_analysis['true'] == df_analysis['true'].iloc[0]).astype(int)
-            
+
             # Calculer les métriques par décile
             decile_stats = df_analysis.groupby('decile').agg({
                 'true': ['count'],  # Juste le count pour les labels originaux
                 'true_numeric': ['sum', 'mean'],  # Calculs sur la version numérique
                 'pred_proba': ['mean', 'min', 'max']
             }).round(4)
-            
-            decile_stats.columns = ['Nb_observations', 'Nb_positifs', 'Taux_positif_reel', 
+
+            decile_stats.columns = ['Nb_observations', 'Nb_positifs', 'Taux_positif_reel',
                                    'Probabilite_moyenne', 'Prob_min', 'Prob_max']
-            
-            st.subheader("📊 Analyse par Déciles (Classification)")
+
+            st.subheader("Analyse par Déciles (Classification)")
             st.dataframe(decile_stats, use_container_width=True)
-            
+
             # Visualisation
             fig = make_subplots(
                 rows=2, cols=2,
@@ -128,31 +128,31 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
                 specs=[[{"type": "bar"}, {"type": "scatter"}],
                        [{"type": "bar"}, {"type": "bar"}]]
             )
-            
+
             # Effectifs par décile
             fig.add_trace(
-                go.Bar(x=decile_stats.index, y=decile_stats['Nb_observations'], 
+                go.Bar(x=decile_stats.index, y=decile_stats['Nb_observations'],
                        name="Effectifs", marker_color='lightblue'),
                 row=1, col=1
             )
-            
+
             # Taux de positifs
             fig.add_trace(
-                go.Scatter(x=decile_stats.index, y=decile_stats['Taux_positif_reel'], 
+                go.Scatter(x=decile_stats.index, y=decile_stats['Taux_positif_reel'],
                           mode='lines+markers', name="Taux positifs réel", line=dict(color='red')),
                 row=1, col=2
             )
-            
+
             # Probabilités moyennes
             fig.add_trace(
-                go.Bar(x=decile_stats.index, y=decile_stats['Probabilite_moyenne'], 
+                go.Bar(x=decile_stats.index, y=decile_stats['Probabilite_moyenne'],
                        name="Prob moyenne", marker_color='lightgreen'),
                 row=2, col=1
             )
-            
+
             fig.update_layout(height=600, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
-            
+
         else:
             # Régression : analyser par déciles de valeurs prédites
             df_analysis = pd.DataFrame({
@@ -160,57 +160,57 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
                 'pred': y_pred,
                 'error': np.abs(y_true - y_pred)
             })
-            
+
             df_analysis['decile'] = pd.qcut(df_analysis['pred'], 10, labels=False, duplicates='drop')
-            
+
             decile_stats = df_analysis.groupby('decile').agg({
                 'true': ['mean', 'std'],
                 'pred': ['mean', 'std'],
                 'error': ['mean', 'std']
             }).round(4)
-            
-            decile_stats.columns = ['Vrai_moyenne', 'Vrai_std', 
+
+            decile_stats.columns = ['Vrai_moyenne', 'Vrai_std',
                                    'Pred_moyenne', 'Pred_std',
                                    'Erreur_moyenne', 'Erreur_std']
-            
-            st.subheader("📊 Analyse par Déciles (Régression)")
+
+            st.subheader("Analyse par Déciles (Régression)")
             st.dataframe(decile_stats, use_container_width=True)
-            
+
             # Visualisation
             fig = make_subplots(
                 rows=1, cols=2,
                 subplot_titles=("Valeurs moyennes par décile", "Erreurs moyennes par décile")
             )
-            
+
             fig.add_trace(
-                go.Scatter(x=decile_stats.index, y=decile_stats['Vrai_moyenne'], 
+                go.Scatter(x=decile_stats.index, y=decile_stats['Vrai_moyenne'],
                           mode='lines+markers', name="Vrai", line=dict(color='blue')),
                 row=1, col=1
             )
-            
+
             fig.add_trace(
-                go.Scatter(x=decile_stats.index, y=decile_stats['Pred_moyenne'], 
+                go.Scatter(x=decile_stats.index, y=decile_stats['Pred_moyenne'],
                           mode='lines+markers', name="Prédit", line=dict(color='red')),
                 row=1, col=1
             )
-            
+
             fig.add_trace(
-                go.Bar(x=decile_stats.index, y=decile_stats['Erreur_moyenne'], 
+                go.Bar(x=decile_stats.index, y=decile_stats['Erreur_moyenne'],
                        name="Erreur moyenne", marker_color='orange'),
                 row=1, col=2
             )
-            
+
             fig.update_layout(height=400, showlegend=True)
             st.plotly_chart(fig, use_container_width=True)
-    
+
     except Exception as e:
-        st.error(f"❌ Erreur lors de l'analyse par déciles : {str(e)}")
-        st.info("💡 **Solution possible** : Vérifiez que vos données contiennent des valeurs numériques valides")
+        st.error(f"Erreur lors de l'analyse par déciles : {str(e)}")
+        st.info("**Solution possible** : Vérifiez que vos données contiennent des valeurs numériques valides")
 
 def learning_curve_analysis(model, X, y, cv=5):
     """Analyse des courbes d'apprentissage"""
-    
-    with st.spinner("📈 Calcul des learning curves..."):
+
+    with st.spinner("Calcul des learning curves..."):
         try:
             # Déterminer le scoring en fonction du type de problème
             if hasattr(y, 'nunique'):
@@ -219,22 +219,22 @@ def learning_curve_analysis(model, X, y, cv=5):
                 unique_count = len(np.unique(y))
             else:
                 unique_count = len(np.unique(y))
-            
+
             scoring = 'accuracy' if unique_count < 20 else 'r2'
-            
+
             train_sizes, train_scores, val_scores = learning_curve(
-                model, X, y, cv=cv, n_jobs=-1, 
+                model, X, y, cv=cv, n_jobs=-1,
                 train_sizes=np.linspace(0.1, 1.0, 10),
                 scoring=scoring
             )
-            
+
             train_mean = np.mean(train_scores, axis=1)
             train_std = np.std(train_scores, axis=1)
             val_mean = np.mean(val_scores, axis=1)
             val_std = np.std(val_scores, axis=1)
-            
+
             fig = go.Figure()
-            
+
             # Courbe d'entraînement
             fig.add_trace(go.Scatter(
                 x=train_sizes, y=train_mean,
@@ -243,7 +243,7 @@ def learning_curve_analysis(model, X, y, cv=5):
                 line=dict(color='blue'),
                 error_y=dict(type='data', array=train_std, visible=True)
             ))
-            
+
             # Courbe de validation
             fig.add_trace(go.Scatter(
                 x=train_sizes, y=val_mean,
@@ -252,35 +252,35 @@ def learning_curve_analysis(model, X, y, cv=5):
                 line=dict(color='red'),
                 error_y=dict(type='data', array=val_std, visible=True)
             ))
-            
+
             fig.update_layout(
                 title="Courbes d'Apprentissage",
                 xaxis_title="Taille de l'ensemble d'entraînement",
                 yaxis_title="Score",
                 hovermode='x unified'
             )
-            
+
             st.plotly_chart(fig, use_container_width=True)
-            
+
             # Interprétation
             overfitting = train_mean[-1] - val_mean[-1]
             if overfitting > 0.1:
-                st.warning("⚠️ Signes d'overfitting détectés ! L'écart entre entraînement et validation est de {:.3f}".format(overfitting))
+                st.warning("Signes d'overfitting détectés ! L'écart entre entraînement et validation est de {:.3f}".format(overfitting))
             elif overfitting < -0.05:
-                st.info("ℹ️ Le modèle pourrait être sous-ajusté. Considérez un modèle plus complexe.")
+                st.info("ℹLe modèle pourrait être sous-ajusté. Considérez un modèle plus complexe.")
             else:
-                st.success("✅ Bon équilibre biais-variance !")
-                
+                st.success("Bon équilibre biais-variance !")
+
         except Exception as e:
-            st.error(f"❌ Erreur lors du calcul des learning curves : {str(e)}")
+            st.error(f"Erreur lors du calcul des learning curves : {str(e)}")
 
 def calibration_plot(y_true, y_pred_proba):
     """Graphe de calibration pour les probabilités"""
-    
+
     prob_true, prob_pred = calibration_curve(y_true, y_pred_proba, n_bins=10)
-    
+
     fig = go.Figure()
-    
+
     # Courbe de calibration
     fig.add_trace(go.Scatter(
         x=prob_pred, y=prob_true,
@@ -288,7 +288,7 @@ def calibration_plot(y_true, y_pred_proba):
         name='Calibration',
         line=dict(color='blue', width=2)
     ))
-    
+
     # Courbe parfaite
     fig.add_trace(go.Scatter(
         x=[0, 1], y=[0, 1],
@@ -296,114 +296,114 @@ def calibration_plot(y_true, y_pred_proba):
         name='Parfait',
         line=dict(color='gray', dash='dash')
     ))
-    
+
     fig.update_layout(
         title="Graphe de Calibration",
         xaxis_title="Probabilité prédite",
         yaxis_title="Fréquence observée",
         showlegend=True
     )
-    
+
     st.plotly_chart(fig, use_container_width=True)
 
 def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
     """Interface principale pour l'évaluation avancée"""
-    
+
     try:
-        st.markdown("## 🔬 Évaluation Avancée du Modèle")
-        
+        st.markdown("## Évaluation Avancée du Modèle")
+
         # Prédictions avec gestion d'erreur
         try:
             y_pred = model.predict(X_test)
         except Exception as e:
-            st.error(f"❌ Erreur lors de la prédiction : {str(e)}")
+            st.error(f"Erreur lors de la prédiction : {str(e)}")
             return
-        
+
         y_pred_proba = None
         if hasattr(model, "predict_proba") and task_type == "classification":
             try:
                 y_pred_proba = model.predict_proba(X_test)[:, 1]
             except Exception as e:
-                st.warning(f"⚠️ Erreur lors du calcul des probabilités : {str(e)}")
-        
+                st.warning(f"Erreur lors du calcul des probabilités : {str(e)}")
+
         # SECTION 1: Analyse par déciles (automatique)
-        st.markdown("### 📊 Analyse par Déciles")
+        st.markdown("### Analyse par Déciles")
         decile_analysis(y_test, y_pred, y_pred_proba, task_type)
-        
+
         st.markdown("---")
-        
+
         # SECTION 2: Analyses avancées avec boutons séparés
-        st.markdown("### 🔬 Analyses Avancées")
-        
+        st.markdown("### Analyses Avancées")
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            if st.button("📈 Learning Curves", type="primary", use_container_width=True):
+            if st.button("Learning Curves", type="primary", use_container_width=True):
                 st.session_state["show_learning_curves"] = True
                 st.session_state["show_shap"] = False
                 st.rerun()
-        
+
         with col2:
             if SHAP_AVAILABLE:
-                if st.button("🎯 Analyse SHAP", type="primary", use_container_width=True):
+                if st.button("Analyse SHAP", type="primary", use_container_width=True):
                     st.session_state["show_shap"] = True
                     st.session_state["show_learning_curves"] = False
                     st.rerun()
             else:
-                st.warning("⚠️ SHAP non installé")
-        
+                st.warning("SHAP non installé")
+
         # SECTION 3: Affichage des résultats
         if st.session_state.get("show_learning_curves", False):
             st.markdown("---")
-            st.markdown("### 📈 Learning Curves")
-            
-            with st.spinner("📈 Calcul en cours..."):
+            st.markdown("### Learning Curves")
+
+            with st.spinner("Calcul en cours..."):
                 try:
                     X_train = st.session_state.get("X_train", X_test)
                     y_train = st.session_state.get("y_train", y_test)
-                    
+
                     if X_train is None or y_train is None:
-                        st.error("❌ Données non disponibles")
+                        st.error("Données non disponibles")
                     else:
                         learning_curve_analysis(model, X_train, y_train, cv=5)
-                        st.success("✅ Learning Curves générées !")
-                        
+                        st.success("Learning Curves générées !")
+
                 except Exception as e:
-                    st.error(f"❌ Erreur: {str(e)}")
-            
-            if st.button("❌ Fermer"):
+                    st.error(f"Erreur: {str(e)}")
+
+            if st.button("Fermer"):
                 st.session_state["show_learning_curves"] = False
                 st.rerun()
-        
+
         if st.session_state.get("show_shap", False):
             st.markdown("---")
-            st.markdown("### 🎯 Analyse SHAP")
-            
-            with st.spinner("🔍 Analyse en cours..."):
+            st.markdown("### Analyse SHAP")
+
+            with st.spinner("Analyse en cours..."):
                 try:
                     feature_names = None
                     if hasattr(X_test, 'columns'):
                         feature_names = X_test.columns.tolist()
-                    
+
                     shap_analysis(model, X_test, feature_names, max_display=20)
-                    st.success("✅ Analyse SHAP terminée !")
-                    
+                    st.success("Analyse SHAP terminée !")
+
                 except Exception as e:
-                    st.error(f"❌ Erreur: {str(e)}")
-            
-            if st.button("❌ Fermer"):
+                    st.error(f"Erreur: {str(e)}")
+
+            if st.button("Fermer"):
                 st.session_state["show_shap"] = False
                 st.rerun()
-        
+
         # SECTION 4: Calibration (classification)
         if task_type == "classification":
             st.markdown("---")
-            st.markdown("### 📋 Courbe de Calibration")
+            st.markdown("### Courbe de Calibration")
             if y_pred_proba is not None:
                 calibration_plot(y_test, y_pred_proba)
             else:
-                st.warning("⚠️ Probabilités non disponibles")
-    
+                st.warning("Probabilités non disponibles")
+
     except Exception as e:
-        st.error(f"❌ Erreur générale dans l'évaluation avancée : {str(e)}")
-        st.info("💡 **Conseil** : Vérifiez que votre modèle et vos données sont valides")
+        st.error(f"Erreur générale dans l'évaluation avancée : {str(e)}")
+        st.info("**Conseil** : Vérifiez que votre modèle et vos données sont valides")
