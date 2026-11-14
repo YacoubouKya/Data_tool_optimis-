@@ -31,13 +31,12 @@ ENV/
 # Outputs (fichiers générés)
 outputs/
 *.pkl
-profiling_report.html
 
 # Data (fichiers volumineux)
 *.xlsx
 *.xls
 *.csv
-!sample_data.csv
+!docs/*.csv
 
 # IDE
 .vscode/
@@ -53,9 +52,3 @@ desktop.ini
 
 # Logs
 *.log
-
-# Anciens fichiers
-requirments.txt
-launch.ps1
-launch_fixed.ps1
-start.ps1

@@ -1,7 +1,5 @@
-# Chargement de fichiers
-# data_loader.py
+"""Chargement des fichiers CSV et Excel envoyés via l'interface."""
 
-# modules/data_loader.py
 import pandas as pd
 import io
 import streamlit as st

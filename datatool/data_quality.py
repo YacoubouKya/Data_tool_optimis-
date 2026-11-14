@@ -1,12 +1,7 @@
-# data_quality_optimized.py
-"""
-Module de contrôle qualité des données OPTIMISÉ (vectorisé, sans boucles)
-Version 2.0 - Performance améliorée
-"""
+"""Contrôle qualité des données à partir d'un dictionnaire de données."""
 
 import pandas as pd
 import numpy as np
-import re
 from datetime import datetime
 from typing import Dict, List, Tuple
 
@@ -193,6 +188,19 @@ def normalize_dictionnaire(dictionnaire: pd.DataFrame) -> pd.DataFrame:
 
     return dict_norm
 
+def _as_text(series: pd.Series) -> pd.Series:
+    """Représentation texte d'une colonne pour la comparer aux valeurs du dictionnaire.
+
+    Les codes numériques entiers (1, 1.0) sont ramenés à "1" pour correspondre
+    à la saisie "1" du dictionnaire.
+    """
+    if pd.api.types.is_numeric_dtype(series):
+        non_null = series.dropna()
+        if len(non_null) and (non_null % 1 == 0).all():
+            return series.astype("Int64").astype(str)
+    return series.astype(str).str.strip()
+
+
 class DataQualityChecker:
     """Classe optimisée pour vérifier la qualité des données selon un dictionnaire"""
 
@@ -320,7 +328,7 @@ class DataQualityChecker:
         """Vérifie les valeurs catégoriques (VECTORISÉ - pas de boucle)"""
         if pd.notna(rule['Valeurs_Autorisées']):
             allowed = [v.strip() for v in str(rule['Valeurs_Autorisées']).split(',')]
-            invalid_mask = (~df[col].isin(allowed)) & df[col].notna()
+            invalid_mask = (~_as_text(df[col]).isin(allowed)) & df[col].notna()
 
             if invalid_mask.any():
                 invalid_df = pd.DataFrame({

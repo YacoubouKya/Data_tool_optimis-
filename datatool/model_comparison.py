@@ -1,8 +1,4 @@
-# modules/model_comparison.py
-"""
-Module de comparaison de plusieurs modèles ML
-Permet d'entraîner et comparer simultanément plusieurs algorithmes
-"""
+"""Comparaison automatique de plusieurs modèles de machine learning."""
 
 import streamlit as st
 import pandas as pd
@@ -21,16 +17,16 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.naive_bayes import GaussianNB
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.impute import SimpleImputer
-import joblib
 import time
-from typing import Dict, List, Tuple, Any
+from io import BytesIO
+from typing import Any, Dict, List
+
+import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-from . import helpers
-from . import metrics
-from . import model_utils
+from sklearn.base import clone
+
+from . import metrics, model_utils
 
 
 class ModelComparator:
@@ -116,9 +112,8 @@ class ModelComparator:
                 }
 
     def build_preprocessor(self, X: pd.DataFrame, do_scale: bool = True) -> ColumnTransformer:
-        """Construit le preprocesseur pour les données"""
-        # Utilisation de la fonction commune de model_utils
-        return model_utils.build_preprocessor(X, do_scale)
+        """Construit le préprocesseur commun à tous les modèles comparés."""
+        return model_utils.build_preprocessor(X, do_scale, self.use_target_encoding)
 
     def train_and_evaluate(
         self,
@@ -141,8 +136,9 @@ class ModelComparator:
         start_time = time.time()
 
         # Créer le pipeline
+        # Copie non entraînée du préprocesseur : chaque pipeline reste indépendant
         pipe = Pipeline([
-            ("preprocessor", preprocessor),
+            ("preprocessor", clone(preprocessor)),
             ("model", model)
         ])
 
@@ -394,24 +390,6 @@ class ModelComparator:
         plt.tight_layout()
         return fig
 
-    def save_best_model(self, target: str, output_dir: str = "outputs/models") -> str:
-        """Sauvegarde le meilleur modèle"""
-        if self.best_model is None or self.best_model not in self.models:
-            raise ValueError("Aucun meilleur modèle trouvé")
-
-        helpers.ensure_dir(output_dir)
-        model_path = f"{output_dir}/best_model_{target}.pkl"
-        joblib.dump(self.models[self.best_model], model_path)
-
-        return model_path
-
-    def get_model_details(self, model_name: str) -> Dict[str, Any]:
-        """Retourne les détails d'un modèle spécifique"""
-        for result in self.results:
-            if result["model_name"] == model_name:
-                return result
-        return None
-
 
 def run_model_comparison(df: pd.DataFrame) -> dict:
     """
@@ -498,12 +476,8 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
     )
     available_models = list(comparator.get_available_models().keys())
 
-    # Vérifier la taille du dataset pour recommandations
-    dataset_size_mb = (X.memory_usage(deep=True).sum() + y.memory_usage(deep=True)) / 1024 / 1024
-    n_rows = len(X)
-
     # Recommandation compacte pour gros datasets
-    if dataset_size_mb > 5 or n_rows > 10000:
+    if is_large_dataset:
         st.info(f"Dataset volumineux ({n_rows:,} lignes, {dataset_size_mb:.1f} MB) - Sélectionnez 3-5 modèles pour éviter les timeouts")
 
         # Toggle pour voir les recommandations détaillées
@@ -519,20 +493,11 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                 st.markdown("**Lents (60-120s)**")
                 st.markdown("- SVM/SVR")
 
-    # Initialiser selected_models dans session_state si nécessaire
+    # Sélection par défaut : modèles rapides ; on ne garde que les modèles disponibles
     if "selected_models" not in st.session_state:
-        # Par défaut : modèles rapides si gros dataset
-        if dataset_size_mb > 5 or n_rows > 10000:
-            st.session_state.selected_models = model_utils.get_fast_models(task)
-        else:
-            # Utiliser les modèles rapides pour éviter les incompatibilités
-            st.session_state.selected_models = model_utils.get_fast_models(task)
-
-    # Nettoyer la sélection pour ne garder que les modèles disponibles
-    available_models = model_utils.get_available_models(task)
+        st.session_state.selected_models = model_utils.get_fast_models(task)
     st.session_state.selected_models = [
-        model for model in st.session_state.selected_models
-        if model in available_models
+        model for model in st.session_state.selected_models if model in available_models
     ]
 
     # Options de sélection rapide
@@ -568,19 +533,15 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
 
     st.info(f"{len(selected_models)} modèle(s) sélectionné(s)")
 
-    # Bouton de lancement
+    # Lancement : les résultats sont conservés en session pour rester affichés
     if st.button("Lancer la Comparaison", type="primary"):
         with st.spinner("Entraînement en cours..."):
-            # Split des données
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=random_state
             )
-
-            # Afficher le mode utilisé
             if is_large_dataset and fast_mode:
                 st.info("Mode rapide activé : Random Forest (50 estimateurs), Gradient Boosting (50 estimateurs)")
 
-            # Comparaison
             results_df = comparator.compare_models(
                 selected_models,
                 X_train, X_test, y_train, y_test,
@@ -590,92 +551,81 @@ def run_model_comparison(df: pd.DataFrame) -> dict:
                 fast_mode=fast_mode
             )
 
-            # Affichage des résultats
-            st.markdown("---")
-            st.markdown("## Résultats de la Comparaison")
+        best_model_pipeline = comparator.models.get(comparator.best_model)
+        model_utils.store_model_in_session(
+            model=best_model_pipeline,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            task=task,
+            model_name=comparator.best_model,
+            is_comparison=True
+        )
+        st.session_state.update({
+            "comparison_results": results_df,
+            "comparison_results_target": target,
+            "comparator": comparator,
+            "best_model": best_model_pipeline,
+            "best_model_name": comparator.best_model,
+            "best_model_score": comparator.best_score
+        })
 
-            # Tableau des résultats
-            st.dataframe(
-                results_df.style.highlight_max(
-                    subset=[col for col in results_df.columns if col not in ["Modèle", "Temps (s)", "Statut"]],
-                    color='lightgreen'
-                ),
-                use_container_width=True
+    if st.session_state.get("comparison_results_target") == target and "comparator" in st.session_state:
+        _render_results(st.session_state["comparator"], st.session_state["comparison_results"], target)
+
+
+def _render_results(comparator: ModelComparator, results_df: pd.DataFrame, target: str) -> None:
+    """Affiche le tableau, les graphiques et les exports de la dernière comparaison."""
+    st.markdown("---")
+    st.markdown("## Résultats de la Comparaison")
+
+    st.dataframe(
+        results_df.style.highlight_max(
+            subset=[col for col in results_df.columns if col not in ["Modèle", "Temps (s)", "Statut"]],
+            color="lightgreen"
+        ),
+        width="stretch"
+    )
+
+    if comparator.best_model:
+        st.success(f"**Meilleur modèle** : {comparator.best_model} (Score: {comparator.best_score:.4f})")
+
+    st.markdown("### Visualisations")
+    tab1, tab2 = st.tabs(["Comparaison", "Heatmap"])
+    with tab1:
+        fig = comparator.plot_comparison(results_df)
+        if fig:
+            st.pyplot(fig)
+            plt.close(fig)
+    with tab2:
+        fig = comparator.plot_metrics_heatmap(results_df)
+        if fig:
+            st.pyplot(fig)
+            plt.close(fig)
+        else:
+            st.info("Pas assez de métriques pour créer une heatmap")
+
+    st.markdown("### Export")
+    safe_target = "".join(c if c.isalnum() else "_" for c in target)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            "Télécharger les résultats (CSV)",
+            results_df.to_csv(index=False),
+            file_name=f"comparison_results_{safe_target}.csv",
+            mime="text/csv",
+            on_click="ignore",
+        )
+    with col2:
+        best_pipeline = comparator.models.get(comparator.best_model)
+        if best_pipeline is not None:
+            buffer = BytesIO()
+            joblib.dump(best_pipeline, buffer)
+            st.download_button(
+                "Télécharger le meilleur modèle (.pkl)",
+                buffer.getvalue(),
+                file_name=f"best_model_{safe_target}.pkl",
+                mime="application/octet-stream",
+                on_click="ignore",
             )
-
-            # Meilleur modèle
-            if comparator.best_model:
-                st.success(f"**Meilleur modèle** : {comparator.best_model} (Score: {comparator.best_score:.4f})")
-
-            # Graphiques de comparaison
-            st.markdown("### Visualisations")
-
-            tab1, tab2 = st.tabs(["Comparaison", "Heatmap"])
-
-            with tab1:
-                fig = comparator.plot_comparison(results_df)
-                if fig:
-                    st.pyplot(fig)
-
-            with tab2:
-                fig = comparator.plot_metrics_heatmap(results_df)
-                if fig:
-                    st.pyplot(fig)
-                else:
-                    st.info("Pas assez de métriques pour créer une heatmap")
-
-            # Export des résultats
-            st.markdown("### Export")
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Export CSV des résultats
-                csv = results_df.to_csv(index=False)
-                st.download_button(
-                    "Télécharger les résultats (CSV)",
-                    csv,
-                    f"comparison_results_{target}.csv",
-                    "text/csv"
-                )
-
-            with col2:
-                # Sauvegarder le meilleur modèle
-                if st.button("Sauvegarder le meilleur modèle"):
-                    try:
-                        model_path = comparator.save_best_model(target)
-                        st.success(f"Meilleur modèle sauvegardé : {model_path}")
-                    except Exception as e:
-                        st.error(f"Erreur lors de la sauvegarde : {str(e)}")
-
-            # Stocker dans session_state de manière cohérente avec model_utils
-            best_model_pipeline = comparator.models.get(comparator.best_model)
-
-            # Stocker le modèle avec la fonction commune
-            model_utils.store_model_in_session(
-                model=best_model_pipeline,
-                X_train=X_train,
-                X_test=X_test,
-                y_train=y_train,
-                y_test=y_test,
-                task=task,
-                model_name=comparator.best_model,
-                is_comparison=True  # Indiquer que c'est une comparaison
-            )
-
-            # Stocker les résultats de comparaison
-            st.session_state.update({
-                "comparison_results": results_df,
-                "comparator": comparator,
-                "best_model": best_model_pipeline,
-                "best_model_name": comparator.best_model,
-                "best_model_score": comparator.best_score
-            })
-
-            return {
-                "results": results_df,
-                "best_model": comparator.best_model,
-                "comparator": comparator
-            }
-
-    st.stop()

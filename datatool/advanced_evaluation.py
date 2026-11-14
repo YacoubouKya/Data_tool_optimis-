@@ -1,19 +1,12 @@
-# modules/advanced_evaluation.py
-"""
-Module d'évaluation avancée des modèles ML
-Ajoute des métriques sophistiquées : SHAP, déciles, learning curves, etc.
-"""
+"""Évaluation avancée : SHAP, analyse par déciles, courbes d'apprentissage, calibration."""
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from sklearn.model_selection import learning_curve
-from sklearn.metrics import precision_recall_curve, roc_curve, auc
 from sklearn.calibration import calibration_curve
 
 # Optional imports avec gestion d'erreur
@@ -66,7 +59,7 @@ def shap_analysis(model, X_test, feature_names=None, max_display=20):
                 fig = px.bar(feature_importance_df, x='importance', y='feature',
                             title="Importance Globale des Features (SHAP)", orientation='h')
                 fig.update_layout(height=max(400, len(feature_importance_df) * 25))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
                 return shap_values, feature_names
 
@@ -118,7 +111,7 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
                                    'Probabilite_moyenne', 'Prob_min', 'Prob_max']
 
             st.subheader("Analyse par Déciles (Classification)")
-            st.dataframe(decile_stats, use_container_width=True)
+            st.dataframe(decile_stats, width="stretch")
 
             # Visualisation
             fig = make_subplots(
@@ -151,7 +144,7 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
             )
 
             fig.update_layout(height=600, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         else:
             # Régression : analyser par déciles de valeurs prédites
@@ -174,7 +167,7 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
                                    'Erreur_moyenne', 'Erreur_std']
 
             st.subheader("Analyse par Déciles (Régression)")
-            st.dataframe(decile_stats, use_container_width=True)
+            st.dataframe(decile_stats, width="stretch")
 
             # Visualisation
             fig = make_subplots(
@@ -201,7 +194,7 @@ def decile_analysis(y_true, y_pred, y_pred_proba=None, task_type="classification
             )
 
             fig.update_layout(height=400, showlegend=True)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
     except Exception as e:
         st.error(f"Erreur lors de l'analyse par déciles : {str(e)}")
@@ -260,7 +253,7 @@ def learning_curve_analysis(model, X, y, cv=5):
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
             # Interprétation
             overfitting = train_mean[-1] - val_mean[-1]
@@ -304,7 +297,7 @@ def calibration_plot(y_true, y_pred_proba):
         showlegend=True
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
     """Interface principale pour l'évaluation avancée"""
@@ -338,14 +331,14 @@ def run_advanced_evaluation(model, X_test, y_test, task_type="classification"):
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Learning Curves", type="primary", use_container_width=True):
+            if st.button("Learning Curves", type="primary", width="stretch"):
                 st.session_state["show_learning_curves"] = True
                 st.session_state["show_shap"] = False
                 st.rerun()
 
         with col2:
             if SHAP_AVAILABLE:
-                if st.button("Analyse SHAP", type="primary", use_container_width=True):
+                if st.button("Analyse SHAP", type="primary", width="stretch"):
                     st.session_state["show_shap"] = True
                     st.session_state["show_learning_curves"] = False
                     st.rerun()

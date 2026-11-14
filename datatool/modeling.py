@@ -1,42 +1,29 @@
-# modules/modeling.py
-import streamlit as st
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.ensemble import (
-    RandomForestClassifier, RandomForestRegressor,
-    GradientBoostingClassifier, GradientBoostingRegressor,
-    AdaBoostClassifier, AdaBoostRegressor,
-    ExtraTreesClassifier, ExtraTreesRegressor
-)
-from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.impute import SimpleImputer
-from category_encoders import TargetEncoder
-import joblib
-from typing import Tuple, Any, Dict
-from . import helpers
-from . import metrics
-from . import model_utils
-from math import isfinite
+"""Affinage d'un modèle : choix de l'algorithme, réglage des hyperparamètres, entraînement."""
 
-def _format_metrics(d: dict, decimals=3):
-    """Arrondit les valeurs numériques du dict pour l'affichage."""
-    out = {}
-    for k, v in d.items():
-        try:
-            fv = float(v)
-            if not isfinite(fv):
-                out[k] = v
-            else:
-                out[k] = round(fv, decimals)
-        except Exception:
-            out[k] = v
-    return out
+from io import BytesIO
+
+import joblib
+import pandas as pd
+import streamlit as st
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    AdaBoostRegressor,
+    ExtraTreesClassifier,
+    ExtraTreesRegressor,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
+from . import metrics, model_utils
+
 
 def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
     """
@@ -122,79 +109,6 @@ def _validate_data_for_modeling(X: pd.DataFrame, y: pd.Series) -> bool:
 
     return validation_passed
 
-def build_modeling_pipeline(model, X, do_scale=True, use_target_encoding=True):
-    """
-    Construit le pipeline de modélisation avec gestion des variables catégorielles
-
-    Args:
-        model: Modèle à utiliser
-        X: Données d'entraînement
-        do_scale: Si True, standardise les variables numériques
-        use_target_encoding: Si True, utilise le Target Encoding pour les variables à haute cardinalité
-    """
-    num_cols = X.select_dtypes(include="number").columns.tolist()
-    cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
-
-    # Convertir les catégorielles en string
-    if cat_cols:
-        X[cat_cols] = X[cat_cols].astype(str)
-
-    # Pipeline pour les colonnes numériques
-    num_steps = []
-    if num_cols:
-        num_steps = [("imputer", SimpleImputer(strategy="median"))]
-        if do_scale:
-            num_steps.append(("scaler", StandardScaler()))
-
-    # Gestion des variables catégorielles
-    transformers = []
-
-    # 1. Colonnes numériques
-    if num_cols:
-        transformers.append(("num", Pipeline(num_steps), num_cols))
-
-    # 2. Colonnes catégorielles
-    if cat_cols:
-        # Séparation basse/élevée cardinalité
-        low_card_cols = [col for col in cat_cols if X[col].nunique() <= 100]
-        high_card_cols = [col for col in cat_cols if X[col].nunique() > 100]
-
-        # Pipeline pour basse cardinalité (OneHot)
-        if low_card_cols:
-            cat_steps_low = Pipeline([
-                ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
-            ])
-            transformers.append(("cat_low", cat_steps_low, low_card_cols))
-
-        # Pipeline pour haute cardinalité (Target Encoding)
-        if high_card_cols and use_target_encoding:
-            st.warning(f"Colonnes à haute cardinalité détectées : {', '.join(high_card_cols)}")
-            st.info("Utilisation de Target Encoding pour ces variables")
-
-            cat_steps_high = Pipeline([
-                ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("target_enc", TargetEncoder())
-            ])
-            transformers.append(("cat_high", cat_steps_high, high_card_cols))
-        elif high_card_cols:
-            st.warning(f"Colonnes à haute cardinalité ignorées : {', '.join(high_card_cols)}")
-
-    # Création du ColumnTransformer
-    preprocessor = ColumnTransformer(
-        transformers=transformers,
-        remainder="drop",
-        verbose_feature_names_out=False
-    )
-
-    # Création du pipeline final
-    pipeline = Pipeline([
-        ("preprocessor", preprocessor),
-        ("model", model)
-    ])
-
-    return pipeline
-
 def run_modeling(df: pd.DataFrame) -> dict:
     st.subheader("Modélisation interactive")
 
@@ -263,43 +177,10 @@ def run_modeling(df: pd.DataFrame) -> dict:
         st.info("Corrigez les erreurs ci-dessus avant de continuer")
         st.stop()
 
-    # Vérifier les valeurs manquantes dans y
-    y_missing = y.isna().sum()
-    if y_missing > 0:
-        st.warning(f"Variable cible contient {y_missing} valeurs manquantes ({y_missing/len(y)*100:.1f}%)")
-
-        action = st.radio(
-            "Comment traiter les valeurs manquantes dans la cible ?",
-            ["Supprimer les lignes", "Imputer (moyenne/mode)", "Annuler"],
-            key="missing_target_action"
-        )
-
-        if action == "Annuler":
-            st.info("Veuillez nettoyer vos données avant la modélisation")
-            st.stop()
-        elif action == "Supprimer les lignes":
-            valid_idx = y.notna()
-            X = X[valid_idx].reset_index(drop=True)
-            y = y[valid_idx].reset_index(drop=True)
-            st.success(f"{y_missing} lignes supprimées. Nouvelles dimensions : {len(y)} lignes")
-        else:  # Imputer
-            if y.dtype in ['object', 'category']:
-                mode_val = y.mode()[0] if not y.mode().empty else y.dropna().iloc[0]
-                y = y.fillna(mode_val)
-                st.success(f"Valeurs manquantes imputées avec le mode : {mode_val}")
-            else:
-                mean_val = y.mean()
-                y = y.fillna(mean_val)
-                st.success(f"Valeurs manquantes imputées avec la moyenne : {mean_val:.2f}")
-
-    # Vérifier les valeurs infinies dans y (pour régression)
-    if y.dtype in ['int64', 'float64']:
-        y_inf = (~y.isna() & ((y == float('inf')) | (y == float('-inf')))).sum()
-        if y_inf > 0:
-            st.warning(f"Variable cible contient {y_inf} valeurs infinies")
-            y = y.replace([float('inf'), float('-inf')], pd.NA)
-            y = y.fillna(y.median())
-            st.success(f"Valeurs infinies remplacées par la médiane")
+    # Valeurs manquantes ou infinies dans la cible
+    y, valid_idx = model_utils.validate_and_clean_target(y, target, silent=True)
+    if not valid_idx.all():
+        X = X[valid_idx].reset_index(drop=True)
 
     # Sélection du type de tâche avec UI (détection auto + choix utilisateur)
     task = model_utils.select_task_type_with_ui(y, key_suffix="modeling")
@@ -518,21 +399,9 @@ def run_modeling(df: pd.DataFrame) -> dict:
 
     if st.button("Lancer l'entraînement"):
         with st.spinner("Préparation des données..."):
-            # Préparation des données
-            num_cols = X.select_dtypes(include="number").columns.tolist()
-            cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
-
-            if cat_cols:
-                X[cat_cols] = X[cat_cols].astype(str)
-
-            # Utiliser la fonction build_modeling_pipeline
-            pipeline = build_modeling_pipeline(
-                model=None,  # Le modèle sera ajouté plus tard
-                X=X,
-                do_scale=do_scale,
-                use_target_encoding=use_target_encoding
+            preprocessor = model_utils.build_preprocessor(
+                X, do_scale=do_scale, use_target_encoding=use_target_encoding
             )
-
 
         # Choix du modèle avec tous les hyperparamètres
         if model_choice == "random_forest":
@@ -596,16 +465,11 @@ def run_modeling(df: pd.DataFrame) -> dict:
             else:
                 model = RandomForestRegressor(random_state=random_state)
 
-        preprocessor = pipeline.named_steps['preprocessor']
-
-        pipe = Pipeline([
-            ('preprocessor', preprocessor),
-            ('model', model)  # Le modèle sélectionné
-        ])
+        pipe = Pipeline([("preprocessor", preprocessor), ("model", model)])
 
         # Split & train avec gestion d'erreurs robuste
         try:
-            X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=test_size, random_state=random_state)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
             with st.spinner("Entraînement du modèle en cours..."):
                 pipe.fit(X_train, y_train)
@@ -647,37 +511,39 @@ def run_modeling(df: pd.DataFrame) -> dict:
         else:
             metrics_result = metrics.regression_metrics(y_test, preds)
 
-        metrics_display = _format_metrics(metrics_result, decimals=4)
+        metrics_display = model_utils.format_metrics(metrics_result, decimals=4)
         st.write("**Metrics (test)** :")
         st.json(metrics_display)
 
-        # Sauvegarde modèle et datasets avec gestion d'erreurs
-        # Nettoyer le nom de la cible pour éviter les caractères spéciaux
-        safe_target = target.replace("/", "_").replace("\\", "_").replace(" ", "_").replace(":", "_")
-
-        # Sauvegarde du modèle
-        try:
-            helpers.ensure_dir("outputs/models")
-            model_path = f"outputs/models/model_{safe_target}.pkl"
-            joblib.dump(pipe, model_path)
-            st.success(f"Modèle sauvegardé : {model_path}")
-        except PermissionError:
-            st.warning("Impossible de sauvegarder le modèle : permissions insuffisantes")
-            st.info("Le modèle reste disponible dans la session en cours")
-        except Exception as e:
-            st.warning(f"Impossible de sauvegarder le modèle : {str(e)}")
-            st.info("Le modèle reste disponible dans la session en cours")
-
-        # Sauvegarde des datasets
-        try:
-            helpers.ensure_dir("outputs/data")
-            X_train.assign(**{target: y_train}).to_csv(f"outputs/data/train_{safe_target}.csv", index=False)
-            X_test.assign(**{target: y_test}).to_csv(f"outputs/data/test_{safe_target}.csv", index=False)
-            st.success(f"Datasets sauvegardés dans outputs/data/")
-        except PermissionError:
-            st.warning("Impossible de sauvegarder les datasets : permissions insuffisantes")
-        except Exception as e:
-            st.warning(f"Impossible de sauvegarder les datasets : {str(e)}")
+        # Téléchargements (le disque du serveur n'est pas accessible sur Streamlit Cloud)
+        safe_target = "".join(c if c.isalnum() else "_" for c in target)
+        buffer = BytesIO()
+        joblib.dump(pipe, buffer)
+        col_model, col_train, col_test = st.columns(3)
+        with col_model:
+            st.download_button(
+                "Télécharger le modèle (.pkl)",
+                buffer.getvalue(),
+                file_name=f"model_{safe_target}.pkl",
+                mime="application/octet-stream",
+                on_click="ignore",
+            )
+        with col_train:
+            st.download_button(
+                "Télécharger le jeu d'entraînement",
+                X_train.assign(**{target: y_train}).to_csv(index=False),
+                file_name=f"train_{safe_target}.csv",
+                mime="text/csv",
+                on_click="ignore",
+            )
+        with col_test:
+            st.download_button(
+                "Télécharger le jeu de test",
+                X_test.assign(**{target: y_test}).to_csv(index=False),
+                file_name=f"test_{safe_target}.csv",
+                mime="text/csv",
+                on_click="ignore",
+            )
 
         st.success("Modèle entraîné avec succès !")
 
@@ -697,19 +563,9 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "use_target_encoding": use_target_encoding
         })
 
-        # Feature importance si disponible (essayer d'extraire proprement)
-        try:
-            m = pipe.named_steps["model"]
-            if hasattr(m, "feature_importances_") and len(num_cols) > 0:
-                # get feature names from preprocessor
-                try:
-                    feature_names = pipe.named_steps["preprocessor"].get_feature_names_out()
-                except:
-                    feature_names = num_cols + cat_cols
-                fi = pd.Series(m.feature_importances_, index=feature_names).sort_values(ascending=False)
-                st.session_state["feature_importance"] = fi
-        except Exception:
-            pass
+        feature_importance = model_utils.extract_feature_importance(pipe, X)
+        if feature_importance is not None:
+            st.session_state["feature_importance"] = feature_importance
 
         return {
             "pipeline": pipe,
@@ -720,7 +576,3 @@ def run_modeling(df: pd.DataFrame) -> dict:
             "task": task,
             "y_pred_proba": preds_proba
         }
-
-
-    st.stop()
-

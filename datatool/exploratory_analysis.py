@@ -1,8 +1,4 @@
-"""Module d'analyse exploratoire approfondie pour Data Project Tool.
-
-Ce module permet une analyse complète des données prétraitées avant la modélisation,
-avec des graphiques bivariés intelligents et des indicateurs actuariels.
-"""
+"""Analyse exploratoire avancée : analyses bivariées, indicateurs actuariels, outliers."""
 
 from __future__ import annotations
 
@@ -11,13 +7,11 @@ import numpy as np
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
-from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import IsolationForest
-from typing import Tuple, List, Optional, Dict, Any
+from typing import List, Dict, Any
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -251,9 +245,6 @@ def correlation_analysis(df: pd.DataFrame, numerical_vars: List[str], method: st
         "kendall": "Kendall (robuste)"
     }
 
-    # Heatmap avec masque pour la diagonale
-    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-
     fig = px.imshow(
         corr_matrix,
         title=f"Matrice de corrélation - {method_info[method]}",
@@ -345,7 +336,7 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
         else:  # quanti vs quanti
             fig = quanti_vs_quanti_analysis(df, var1, var2)
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # Indicateurs actuariels
     if var_types['numerical']:
@@ -353,14 +344,14 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
 
         st.markdown("##### Statistiques descriptives avancées")
         indicators_df = calculate_actuarial_indicators(df, var_types['numerical'])
-        st.dataframe(indicators_df, use_container_width=True)
+        st.dataframe(indicators_df, width="stretch")
 
         st.markdown("##### Détection d'outliers")
         outliers_results = detect_outliers_methods(df, var_types['numerical'])
 
         for var, outliers_df in outliers_results.items():
             st.write(f"**{var}**")
-            st.dataframe(outliers_df, use_container_width=True)
+            st.dataframe(outliers_df, width="stretch")
 
         st.markdown("##### Matrice de corrélation")
         if len(var_types['numerical']) > 1:
@@ -386,7 +377,7 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
             st.caption(method_descriptions[corr_method])
 
             corr_fig = correlation_analysis(df, var_types['numerical'], method=corr_method)
-            st.plotly_chart(corr_fig, use_container_width=True)
+            st.plotly_chart(corr_fig, width="stretch")
         else:
             st.info("Besoin d'au moins 2 variables numériques pour la matrice de corrélation")
 
@@ -396,4 +387,3 @@ def exploratory_analysis_interface(df: pd.DataFrame) -> None:
 if __name__ == "__main__":
     # Test du module
     pass
-

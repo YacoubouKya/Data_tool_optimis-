@@ -1,12 +1,7 @@
-# modules/model_utils.py
-"""
-Utilitaires partagés pour la modélisation ML
-Contient les fonctions communes utilisées par modeling.py et model_comparison.py
-"""
+"""Fonctions communes à l'affinage et à la comparaison de modèles."""
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
@@ -67,7 +62,7 @@ def validate_and_clean_target(y: pd.Series, target_name: str, silent: bool = Fal
             st.warning(f"Variable cible contient {y_inf} valeurs infinies")
             y = y.replace([float('inf'), float('-inf')], pd.NA)
             y = y.fillna(y.median())
-            st.success(f"Valeurs infinies remplacées par la médiane")
+            st.success("Valeurs infinies remplacées par la médiane")
 
     return y, valid_idx
 
@@ -148,7 +143,7 @@ def display_target_stats(y: pd.Series, task: str):
             st.metric("Mode", mode_val)
 
 
-def build_preprocessor(X: pd.DataFrame, do_scale: bool = True) -> ColumnTransformer:
+def build_preprocessor(X: pd.DataFrame, do_scale: bool = True, use_target_encoding: bool = True) -> ColumnTransformer:
     """
     Construit le preprocesseur pour les données
 
@@ -195,7 +190,9 @@ def build_preprocessor(X: pd.DataFrame, do_scale: bool = True) -> ColumnTransfor
             transformers.append(("cat_low", cat_steps_low, low_card_cols))
 
         # Pipeline pour haute cardinalité (Target Encoding)
-        if high_card_cols:
+        if high_card_cols and not use_target_encoding:
+            st.warning(f"Colonnes à haute cardinalité ignorées : {', '.join(high_card_cols)}")
+        elif high_card_cols:
             st.warning(f"Colonnes à haute cardinalité détectées : {', '.join(high_card_cols)}")
             st.info("Utilisation de Target Encoding pour ces variables")
 
@@ -210,54 +207,6 @@ def build_preprocessor(X: pd.DataFrame, do_scale: bool = True) -> ColumnTransfor
         remainder="drop",
         verbose_feature_names_out=False
     )
-
-def prepare_data_for_modeling(
-    df: pd.DataFrame,
-    target: str,
-    test_size: float = 0.2,
-    random_state: int = 42,
-    validate_target: bool = True
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, str]:
-    """
-    Prépare les données pour la modélisation
-
-    Args:
-        df: DataFrame complet
-        target: Nom de la variable cible
-        test_size: Proportion du jeu de test
-        random_state: Seed pour la reproductibilité
-        validate_target: Si True, valide et nettoie la cible
-
-    Returns:
-        Tuple (X_train, X_test, y_train, y_test, task_type)
-    """
-    from sklearn.model_selection import train_test_split
-
-    # Séparer X et y
-    X = df.drop(columns=[target])
-    y = df[target]
-
-    # Validation optionnelle de la cible
-    if validate_target:
-        y, valid_idx = validate_and_clean_target(y, target)
-        if not valid_idx.all():
-            X = X[valid_idx].reset_index(drop=True)
-
-    # Détecter le type de tâche
-    task = detect_task_type(y)
-
-    # Afficher les statistiques
-    display_target_stats(y, task)
-
-    # Split train/test
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=test_size,
-        random_state=random_state
-    )
-
-    return X_train, X_test, y_train, y_test, task
-
 
 def store_model_in_session(
     model: Any,
@@ -336,42 +285,6 @@ def format_metrics(d: dict, decimals: int = 3) -> dict:
     return out
 
 
-def get_available_models(task: str) -> list:
-    """
-    Retourne la liste de tous les modèles disponibles pour une tâche
-
-    Args:
-        task: Type de tâche ("classification" ou "regression")
-
-    Returns:
-        Liste des noms de modèles disponibles
-    """
-    if task == "classification":
-        return [
-            "Random Forest",
-            "Gradient Boosting",
-            "Logistic Regression",
-            "Decision Tree",
-            "AdaBoost",
-            "Extra Trees",
-            "SVM",
-            "KNN",
-            "Naive Bayes"
-        ]
-    else:  # regression
-        return [
-            "Random Forest",
-            "Gradient Boosting",
-            "Linear Regression",
-            "Ridge",
-            "Lasso",
-            "ElasticNet",
-            "SVR",
-            "KNN",
-            "Decision Tree"
-        ]
-
-
 def get_fast_models(task: str) -> list:
     """
     Retourne la liste des modèles rapides pour un démarrage rapide
@@ -386,86 +299,6 @@ def get_fast_models(task: str) -> list:
         return ["Random Forest", "Logistic Regression", "Decision Tree"]
     else:
         return ["Random Forest", "Linear Regression", "Ridge"]
-
-
-def display_model_info(model_name: str, task: str):
-    """
-    Affiche des informations sur un modèle spécifique
-
-    Args:
-        model_name: Nom du modèle
-        task: Type de tâche
-    """
-    model_descriptions = {
-        "Random Forest": {
-            "description": "Ensemble de décision trees avec bagging",
-            "pros": "Robuste, peu de tuning nécessaire",
-            "cons": "Peut être lent sur gros datasets",
-            "use_case": "Excellent choix par défaut"
-        },
-        "Gradient Boosting": {
-            "description": "Ensemble séquentiel d'arbres",
-            "pros": "Très performant, gagne souvent les compétitions",
-            "cons": "Sensible au tuning, risque d'overfitting",
-            "use_case": "Quand la performance maximale est requise"
-        },
-        "Logistic Regression": {
-            "description": "Modèle linéaire pour classification",
-            "pros": "Rapide, interprétable",
-            "cons": "Limité aux relations linéaires",
-            "use_case": "Baseline rapide, données linéaires"
-        },
-        "Linear Regression": {
-            "description": "Modèle linéaire pour régression",
-            "pros": "Très rapide, interprétable",
-            "cons": "Limité aux relations linéaires",
-            "use_case": "Baseline rapide, données linéaires"
-        },
-        "SVM": {
-            "description": "Support Vector Machine",
-            "pros": "Efficace en haute dimension",
-            "cons": "Lent sur gros datasets",
-            "use_case": "Petits datasets, haute dimension"
-        },
-        "K-Nearest Neighbors": {
-            "description": "Classification/régression par proximité",
-            "pros": "Simple, pas de phase d'entraînement",
-            "cons": "Lent en prédiction, sensible à l'échelle",
-            "use_case": "Petits datasets, patterns locaux"
-        }
-    }
-
-    if model_name in model_descriptions:
-        info = model_descriptions[model_name]
-        st.markdown("---")
-        st.markdown(f"**ℹÀ propos de {model_name}**")
-        st.markdown(f"**Description** : {info['description']}")
-        st.markdown(f"**Avantages** : {info['pros']}")
-        st.markdown(f"**Limitations** : {info['cons']}")
-        st.markdown(f"**Cas d'usage** : {info['use_case']}")
-        st.markdown("---")
-
-
-def save_model_to_disk(model: Any, target: str, model_name: str = "model") -> str:
-    """
-    Sauvegarde un modèle sur le disque
-
-    Args:
-        model: Modèle à sauvegarder
-        target: Nom de la variable cible
-        model_name: Nom du modèle
-
-    Returns:
-        Chemin du fichier sauvegardé
-    """
-    import joblib
-    from . import helpers
-
-    helpers.ensure_dir("outputs/models")
-    model_path = f"outputs/models/{model_name}_{target}.pkl"
-    joblib.dump(model, model_path)
-
-    return model_path
 
 
 def extract_feature_importance(pipeline: Any, X: pd.DataFrame) -> Optional[pd.Series]:
@@ -484,7 +317,7 @@ def extract_feature_importance(pipeline: Any, X: pd.DataFrame) -> Optional[pd.Se
         if hasattr(model, "feature_importances_"):
             try:
                 feature_names = pipeline.named_steps["preprocessor"].get_feature_names_out()
-            except:
+            except Exception:
                 num_cols = X.select_dtypes(include="number").columns.tolist()
                 cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
                 feature_names = num_cols + cat_cols

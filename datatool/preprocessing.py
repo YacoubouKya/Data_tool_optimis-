@@ -1,5 +1,4 @@
-# modules/preprocessing.py
-# preprocessing.py
+"""Prétraitement : détection d'anomalies, corrections journalisées, mode dictionnaire de données."""
 
 import pandas as pd
 import streamlit as st
@@ -358,7 +357,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
 
         # Aperçu complet du dictionnaire (sans expander)
         st.markdown("#### Aperçu du dictionnaire normalisé")
-        st.dataframe(dictionnaire, use_container_width=True)
+        st.dataframe(dictionnaire, width="stretch")
 
     except Exception as e:
         st.error(f"Erreur lors du chargement du dictionnaire : {e}")
@@ -394,7 +393,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
             'NaN': [df[col].isna().sum() for col in cols_with_nan],
             'Pourcentage': [f"{(df[col].isna().sum()/len(df))*100:.1f}%" for col in cols_with_nan]
         }).sort_values('NaN', ascending=False)
-        st.dataframe(missing_df, use_container_width=True)
+        st.dataframe(missing_df, width="stretch")
 
         # Proposer un nettoyage préalable
         st.markdown("**Options de pré-nettoyage** :")
@@ -442,7 +441,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
 
                     # Afficher le log directement
                     st.markdown("**Log du nettoyage :**")
-                    st.dataframe(pd.DataFrame(clean_log), use_container_width=True)
+                    st.dataframe(pd.DataFrame(clean_log), width="stretch")
 
         elif pre_clean == "Oui, choisir les actions":
             st.info("Utilisez l'onglet 'Prétraitement Standard' pour un nettoyage personnalisé, puis revenez ici.")
@@ -514,7 +513,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
             (anomalies_df['Colonne'].isin(col_filter))
         ]
 
-        st.dataframe(filtered_anomalies, use_container_width=True)
+        st.dataframe(filtered_anomalies, width="stretch")
 
         # Télécharger le rapport
         st.markdown("### Télécharger le Rapport d'Anomalies")
@@ -544,7 +543,7 @@ def run_dictionary_based_preprocessing(df: pd.DataFrame):
 
                     # Afficher le log
                     st.markdown("### Log des Corrections")
-                    st.dataframe(log_df, use_container_width=True)
+                    st.dataframe(log_df, width="stretch")
 
                     # Statistiques de qualité
                     st.markdown("### Statistiques de Qualité")

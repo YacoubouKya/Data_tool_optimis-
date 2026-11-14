@@ -1,6 +1,4 @@
-# evaluation.py
-# modules/evaluation.py
-
+"""Évaluation du modèle retenu : métriques, matrices de confusion, courbes ROC, résidus."""
 
 import streamlit as st
 import pandas as pd
@@ -36,11 +34,11 @@ def run_evaluation(X_test, y_test):
 
             col1, col2 = st.columns(2)
             with col1:
-                if st.button(f"**Modèle affiné**\n{refined_model_name}", use_container_width=True, type="primary"):
+                if st.button(f"**Modèle affiné**\n{refined_model_name}", width="stretch", type="primary"):
                     st.session_state["selected_eval_model"] = "refined"
             with col2:
                 score_text = f" (Score: {best_model_score:.4f})" if best_model_score else ""
-                if st.button(f"**Meilleur modèle de la comparaison**\n{best_model_name}{score_text}", use_container_width=True):
+                if st.button(f"**Meilleur modèle de la comparaison**\n{best_model_name}{score_text}", width="stretch"):
                     st.session_state["selected_eval_model"] = "best"
 
             # Déterminer le modèle sélectionné

@@ -1,11 +1,10 @@
-# eda.py
-# modules/eda.py
+"""Analyse exploratoire rapide : aperçu, rapport ydata-profiling, histogrammes, corrélations."""
 
-import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
-from io import BytesIO
+import streamlit as st
+
 try:
     from ydata_profiling import ProfileReport
     YDATA_AVAILABLE = True
@@ -81,7 +80,8 @@ def run_eda(df: pd.DataFrame):
     elif not st.session_state.report_generated:
         if st.button("Générer le rapport de Profiling"):
             prof = generate_profile(df)
-            prof.to_file("profiling_report.html")
+            # Rapport conservé dans la session de l'utilisateur (pas de fichier partagé sur le serveur)
+            st.session_state.profiling_html = prof.to_html()
             st.session_state.report_generated = True
             st.session_state.show_report = True
 
@@ -95,13 +95,16 @@ def run_eda(df: pd.DataFrame):
             if st.button("Masquer le rapport"):
                 st.session_state.show_report = False
         with col3:
-            with open("profiling_report.html", "rb") as f:
-                st.download_button(label="Télécharger le rapport HTML", data=f, file_name="profiling_report.html", mime="text/html")
+            st.download_button(
+                label="Télécharger le rapport HTML",
+                data=st.session_state.profiling_html,
+                file_name="profiling_report.html",
+                mime="text/html",
+                on_click="ignore",
+            )
 
         if st.session_state.show_report:
-            with open("profiling_report.html", "r", encoding="utf-8") as f:
-                report_html = f.read()
-            st.components.v1.html(report_html, height=800, scrolling=True)
+            st.iframe(st.session_state.profiling_html, height=800)
 
     # --------------------------
     # Histogrammes : sélection interactive (évite boucle coûteuse par défaut)

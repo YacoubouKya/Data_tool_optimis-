@@ -1,21 +1,14 @@
-# modules/reporting.py
-"""
-Module de génération de rapports HTML professionnels
-Crée des rapports consolidés avec visualisations et métriques
-"""
+"""Génération d'un rapport HTML consolidé (données, prétraitement, modèle, évaluation)."""
 
-import streamlit as st
-import os
-from datetime import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from io import BytesIO
 import base64
-import numpy as np
+from datetime import datetime
+from io import BytesIO
 
-OUT_DIR = "outputs/reports"
-os.makedirs(OUT_DIR, exist_ok=True)
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import streamlit as st
 
 # Configuration matplotlib pour de meilleurs rendus
 plt.rcParams['figure.dpi'] = 100
@@ -343,18 +336,18 @@ def generate_report(session_state: dict):
 
                 # Métriques clés
                 html.append('<div class="metric-box">')
-                html.append(f'<span class="metric-label">Nombre de lignes</span>')
+                html.append('<span class="metric-label">Nombre de lignes</span>')
                 html.append(f'<span class="metric-value">{df.shape[0]:,}</span>')
                 html.append('</div>')
 
                 html.append('<div class="metric-box">')
-                html.append(f'<span class="metric-label">Nombre de colonnes</span>')
+                html.append('<span class="metric-label">Nombre de colonnes</span>')
                 html.append(f'<span class="metric-value">{df.shape[1]}</span>')
                 html.append('</div>')
 
                 missing_total = df.isna().sum().sum()
                 html.append('<div class="metric-box">')
-                html.append(f'<span class="metric-label">Valeurs manquantes</span>')
+                html.append('<span class="metric-label">Valeurs manquantes</span>')
                 html.append(f'<span class="metric-value">{missing_total:,}</span>')
                 html.append('</div>')
 
@@ -592,36 +585,26 @@ def generate_report(session_state: dict):
             html.append(f'<p><strong>Modèle :</strong> {model_name}</p>')
             html.append(f'<p><strong>Type de tâche :</strong> {task_type.capitalize()}</p>')
             html.append('<p><strong>Auteur :</strong> Yacoubou KOUMAI</p>')
-            html.append('<p style="margin-top:20px; color:#95a5a6;">Rapport généré automatiquement par Data Tool v2.2</p>')
+            html.append('<p style="margin-top:20px; color:#95a5a6;">Rapport généré automatiquement par Data Tool</p>')
             html.append('</div>')
 
             html.append('</div>')  # Fermeture container
             html.append("</body></html>")
 
-            # Sauvegarde
-            safe_title = title.replace(" ", "_").replace("/", "-")
-            out_path = os.path.join(OUT_DIR, f"{safe_title}.html")
+            # Le rapport est servi en téléchargement direct (aucun fichier écrit sur le serveur)
+            safe_title = "".join(c if c.isalnum() or c in "-_" else "_" for c in title)
+            report_html = "\n".join(html)
 
-            with open(out_path, "w", encoding="utf-8") as f:
-                f.write("\n".join(html))
-
-            st.success(f"Rapport généré avec succès !")
-
-            # Aperçu du rapport (sans expander)
+            st.success("Rapport généré avec succès !")
             st.markdown("#### Aperçu du rapport généré")
-            st.info(f"**Chemin :** `{out_path}`")
-            st.info(f"**Taille :** {os.path.getsize(out_path) / 1024:.1f} KB")
+            st.info(f"**Taille :** {len(report_html.encode('utf-8')) / 1024:.1f} KB")
             st.info(f"**Sections incluses :** {', '.join(report_sections)}")
 
-            # Bouton de téléchargement
-            with open(out_path, "rb") as f:
-                st.download_button(
-                    label=" Télécharger le rapport HTML",
-                    data=f,
-                    file_name=f"{safe_title}.html",
-                    mime="text/html",
-                    type="primary"
-
-                )
-
-
+            st.download_button(
+                label="Télécharger le rapport HTML",
+                data=report_html,
+                file_name=f"{safe_title}.html",
+                mime="text/html",
+                type="primary",
+                on_click="ignore",
+            )

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
@@ -14,6 +16,19 @@ from datatool import (
 from datatool.error_handler import initialize_error_handling, safe_execute
 from datatool.validators import validate_dataframe, validate_session_state
 
+APP_VERSION = "2.1.0"
+CSS_FILE = Path(__file__).parent / "datatool" / "assets" / "style.css"
+SECTIONS = [
+    "Chargement",
+    "EDA",
+    "Prétraitement",
+    "Analyse Exploratoire",
+    "Comparaison de Modèles",
+    "Affinage de Modèle",
+    "Évaluation",
+    "Reporting",
+]
+
 # ------------------------
 # Configuration de la page
 # ------------------------
@@ -24,174 +39,15 @@ st.set_page_config(
 )
 
 # ------------------------
-# CSS personnalisé (V1)
+# Thème visuel
 # ------------------------
-st.markdown("""
-<style>
+st.markdown(f"<style>{CSS_FILE.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
-/********* HEADER *********/
-.custom-header { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background-color: #1E3A5F; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 9999; box-shadow: 0px 2px 5px rgba(0,0,0,0.3);}
-.custom-header .logo { font-size: 22px; font-weight: bold; color: #FFD700; }
-.custom-header .menu { display: flex; gap: 20px; }
-.custom-header .menu a { color: white; text-decoration: none; font-weight: 500; font-family: 'Segoe UI', sans-serif; transition: color 0.3s;}
-.custom-header .menu a:hover { color: #FFD700; }
-
-.block-container { padding-top: 80px !important; }
-.stApp { background-color: #1E3A5F; }
-.block-container, .st-emotion-cache-18e3th9, .st-emotion-cache-1y4p8pa { background-color: transparent !important; }
-
-/********* TITRES *********/
-h1, h2, h3, h4 { color: #FFD700; font-family: 'Segoe UI', sans-serif; }
-
-/********* TEXTE GLOBAL (VERSION FIXÉE !) *********/
-/* On exclut les éléments critiques utilisés par Streamlit */
-.block-container p,
-.block-container span,
-.block-container label,
-.block-container div:not([data-testid="stFileUploader"]):not(.stSelectbox):not([role="radiogroup"]) {
-    color: #FFFFFF !important;
-    font-family: 'Segoe UI', sans-serif;
-}
-
-/********* SIDEBAR *********/
-[data-testid="stSidebar"] { background-color: #1569C7 !important; color: yellow !important; }
-[data-testid="stSidebar"] h1, h2, h3, label { color: yellow !important; }
-
-/********* BOUTONS *********/
-.stButton>button { background-color: #FFD700; color: #1E3A5F; border-radius: 10px; padding: 10px 20px; border: none; font-weight: bold; }
-.stButton>button:hover { background-color: #FFA500; color: white; }
-
-/********* FILE UPLOADER (fix complet) *********/
-[data-testid="stFileUploader"] {
-    background-color: #FFD700 !important;
-    border-radius: 10px;
-    padding: 10px;
-}
-
-[data-testid="stFileUploader"] * {
-    color: #FFFFFF !important;
-    font-weight: 600;
-}
-
-[data-testid="stFileUploaderDropzone"] {
-    background-color: #111827 !important; /* noir/gris légèrement éclairci pour la zone de drop */
-    border: 2px dashed #FFD700 !important; /* bordure jaune pour rester cohérent avec le thème */
-}
-
-/********* RADIO + SELECTBOX (fix complet) *********/
-div[role="radiogroup"] label {
-    background: #34495E !important;
-    color: yellow !important;
-    padding: 8px 15px;
-    border-radius: 8px;
-    margin: 3px 0;
-    cursor: pointer;
-}
-
-div[role="radiogroup"] label:hover {
-    background: #1ABC9C !important;
-}
-
-.stSelectbox * {
-    background-color: #34495E !important;
-    color: yellow !important;
-}
-
-/********* MÉTRIQUES & PIPELINE (Modélisation/Évaluation) *********/
-/* JSON display pour les métriques */
-[data-testid="stJson"] {
-    background-color: #000000 !important;
-    border-radius: 8px;
-    padding: 10px;
-}
-
-[data-testid="stJson"] *,
-[data-testid="stJson"] div,
-[data-testid="stJson"] span,
-[data-testid="stJson"] p {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    font-family: 'Courier New', monospace !important;
-}
-
-/* Code blocks pour le pipeline */
-code, pre {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    border-radius: 5px;
-    padding: 10px !important;
-}
-
-/* Forcer le fond noir pour les conteneurs de métriques */
-.stMarkdown code {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Cibler spécifiquement les éléments JSON internes */
-[data-testid="stJson"] > div {
-    background-color: #000000 !important;
-}
-
-[data-testid="stJson"] pre {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Dataframes (métriques en tableau) */
-[data-testid="stDataFrame"] {
-    background-color: #000000 !important;
-}
-
-[data-testid="stDataFrame"] * {
-    color: #FFFFFF !important;
-}
-
-/* Tables */
-.stDataFrame table {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-.stDataFrame th {
-    background-color: #1E3A5F !important;
-    color: #FFD700 !important;
-    font-weight: bold;
-}
-
-.stDataFrame td {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Expander pour les détails */
-[data-testid="stExpander"] {
-    background-color: #1E3A5F !important;
-    border: 1px solid #FFD700 !important;
-}
-
-[data-testid="stExpander"] * {
-    color: #FFFFFF !important;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-
-
-# Injection HTML du header
-st.markdown("""
-<div class="custom-header">
-    <div class="logo">Data Project Tool</div>
-    <div class="menu">
-        <a href="#">About</a>
-        <a href="#">Documentation</a>
-        <a href="#">Community</a>
-        <a href="#">Success Stories</a>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# Bandeau supérieur
+st.markdown(
+    '<div class="custom-header"><div class="logo">Data Project Tool</div></div>',
+    unsafe_allow_html=True,
+)
 
 # ------------------------
 # Initialisation de la gestion d'erreurs
@@ -202,10 +58,9 @@ initialize_error_handling()
 # En-tête principal
 # ------------------------
 
-#st.markdown("Développé par Yacoubou KOUMAI v2025")
-st.caption("Développé par Yacoubou KOUMAI - © 2025 | v2.0.0")
+st.caption(f"Développé par Yacoubou KOUMAI - v{APP_VERSION}")
 st.title("Data Project Tool")
-st.markdown("Bienvenue dans ton outil de projet data interactif ")
+st.markdown("Pipeline data science interactif : chargement, exploration, nettoyage, modélisation et reporting.")
 
 # ------------------------
 # Sidebar Navigation
@@ -214,14 +69,14 @@ st.sidebar.title("Navigation")
 
 # Gérer la navigation automatique via session_state
 if "target_section" in st.session_state:
-    default_index = ["Chargement", "EDA", "Prétraitement", "Analyse Exploratoire", "Comparaison de Modèles", "Affinage de Modèle", "Évaluation", "Reporting"].index(st.session_state.target_section)
+    default_index = SECTIONS.index(st.session_state.target_section)
     del st.session_state.target_section
 else:
     default_index = 0
 
 section = st.sidebar.radio(
     "Aller à :",
-    ["Chargement", "EDA", "Prétraitement", "Analyse Exploratoire", "Comparaison de Modèles", "Affinage de Modèle", "Évaluation", "Reporting"],
+    SECTIONS,
     index=default_index
 )
 
@@ -492,7 +347,5 @@ elif section == "Évaluation":
 elif section == "Reporting":
     st.header("Reporting")
     run_reporting_section()
-
-
 
 
