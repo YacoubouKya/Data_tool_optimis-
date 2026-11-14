@@ -31,12 +31,18 @@ def detect_and_propose_corrections(profile_report, df: pd.DataFrame):
                 "Supprimer colonne"
             ])
 
-        n_unique = info.get("n_unique", 0) or 0
-        if n_unique == 1:
+        # n_distinct = nombre de valeurs différentes (n_unique compte les valeurs vues une seule fois)
+        n_distinct = info.get("n_distinct")
+        if n_distinct is None:
+            n_distinct = df[col].nunique() if col in df.columns else 0
+        if n_distinct == 1:
             anomalies.append("Colonne constante")
             corrections.append("Supprimer colonne")
 
-        if len(df) > 0 and n_unique > 0.5 * len(df):
+        is_categorical = col in df.columns and (
+            df[col].dtype == object or isinstance(df[col].dtype, pd.CategoricalDtype)
+        )
+        if is_categorical and len(df) > 0 and n_distinct > 0.5 * len(df):
             anomalies.append("Cardinalité élevée")
             corrections.append("Encodage alternatif (hashing/target)")
 

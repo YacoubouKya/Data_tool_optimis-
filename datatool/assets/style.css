@@ -1,141 +1,46 @@
-/********* HEADER *********/
-.custom-header { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background-color: #1E3A5F; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 9999; box-shadow: 0px 2px 5px rgba(0,0,0,0.3);}
-.custom-header .logo { font-size: 22px; font-weight: bold; color: #FFD700; }
+/* Theme visuel du Data Tool.
+   Les couleurs de base (fond bleu nuit, panneau lateral, texte blanc) viennent de
+   .streamlit/config.toml ; ce fichier ne fait qu'ajuster les titres et les boutons.
+   Regle : tout element colore ici fixe a la fois son fond et la couleur de son texte. */
 
-.block-container { padding-top: 80px !important; }
-.stApp { background-color: #1E3A5F; }
-.block-container, .st-emotion-cache-18e3th9, .st-emotion-cache-1y4p8pa { background-color: transparent !important; }
-
-/********* TITRES *********/
-h1, h2, h3, h4 { color: #FFD700; font-family: 'Segoe UI', sans-serif; }
-
-/********* TEXTE GLOBAL *********/
-/* On exclut les éléments critiques utilisés par Streamlit */
-.block-container p,
-.block-container span,
-.block-container label,
-.block-container div:not([data-testid="stFileUploader"]):not(.stSelectbox):not([role="radiogroup"]) {
-    color: #FFFFFF !important;
-    font-family: 'Segoe UI', sans-serif;
+/* Titres en or (contraste 8:1 sur le fond bleu nuit) */
+[data-testid="stMain"] h1,
+[data-testid="stMain"] h2,
+[data-testid="stMain"] h3,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #FFD700;
 }
 
-/********* SIDEBAR *********/
-[data-testid="stSidebar"] { background-color: #1569C7 !important; color: yellow !important; }
-[data-testid="stSidebar"] h1, h2, h3, label { color: yellow !important; }
-
-/********* BOUTONS *********/
-.stButton>button { background-color: #FFD700; color: #1E3A5F; border-radius: 10px; padding: 10px 20px; border: none; font-weight: bold; }
-.stButton>button:hover { background-color: #FFA500; color: white; }
-
-/********* FILE UPLOADER *********/
-[data-testid="stFileUploader"] {
-    background-color: #FFD700 !important;
+/* Boutons : texte bleu nuit sur fond or */
+.stButton > button,
+.stDownloadButton > button,
+.stFormSubmitButton > button {
+    background-color: #FFD700;
+    color: #1E3A5F;
+    border: none;
     border-radius: 10px;
-    padding: 10px;
-}
-
-[data-testid="stFileUploader"] * {
-    color: #FFFFFF !important;
     font-weight: 600;
 }
-
-[data-testid="stFileUploaderDropzone"] {
-    background-color: #111827 !important; /* noir/gris légèrement éclairci pour la zone de drop */
-    border: 2px dashed #FFD700 !important; /* bordure jaune pour rester cohérent avec le thème */
+.stButton > button p,
+.stDownloadButton > button p,
+.stFormSubmitButton > button p {
+    color: #1E3A5F;
+}
+.stButton > button:hover,
+.stDownloadButton > button:hover,
+.stFormSubmitButton > button:hover {
+    background-color: #FFA500;
+    color: #1E3A5F;
 }
 
-/********* RADIO + SELECTBOX *********/
-div[role="radiogroup"] label {
-    background: #34495E !important;
-    color: yellow !important;
-    padding: 8px 15px;
-    border-radius: 8px;
-    margin: 3px 0;
-    cursor: pointer;
+/* Etiquettes des listes a choix multiples : texte bleu nuit sur fond or */
+[data-baseweb="tag"] {
+    background-color: #FFD700;
 }
-
-div[role="radiogroup"] label:hover {
-    background: #1ABC9C !important;
-}
-
-.stSelectbox * {
-    background-color: #34495E !important;
-    color: yellow !important;
-}
-
-/********* MÉTRIQUES & PIPELINE (Modélisation/Évaluation) *********/
-/* JSON display pour les métriques */
-[data-testid="stJson"] {
-    background-color: #000000 !important;
-    border-radius: 8px;
-    padding: 10px;
-}
-
-[data-testid="stJson"] *,
-[data-testid="stJson"] div,
-[data-testid="stJson"] span,
-[data-testid="stJson"] p {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    font-family: 'Courier New', monospace !important;
-}
-
-/* Code blocks pour le pipeline */
-code, pre {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-    border-radius: 5px;
-    padding: 10px !important;
-}
-
-/* Forcer le fond noir pour les conteneurs de métriques */
-.stMarkdown code {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Cibler spécifiquement les éléments JSON internes */
-[data-testid="stJson"] > div {
-    background-color: #000000 !important;
-}
-
-[data-testid="stJson"] pre {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Dataframes (métriques en tableau) */
-[data-testid="stDataFrame"] {
-    background-color: #000000 !important;
-}
-
-[data-testid="stDataFrame"] * {
-    color: #FFFFFF !important;
-}
-
-/* Tables */
-.stDataFrame table {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-.stDataFrame th {
-    background-color: #1E3A5F !important;
-    color: #FFD700 !important;
-    font-weight: bold;
-}
-
-.stDataFrame td {
-    background-color: #000000 !important;
-    color: #FFFFFF !important;
-}
-
-/* Expander pour les détails */
-[data-testid="stExpander"] {
-    background-color: #1E3A5F !important;
-    border: 1px solid #FFD700 !important;
-}
-
-[data-testid="stExpander"] * {
-    color: #FFFFFF !important;
+[data-baseweb="tag"] span,
+[data-baseweb="tag"] svg {
+    color: #1E3A5F;
+    fill: #1E3A5F;
 }
